@@ -20,12 +20,11 @@ public class Semantic
 	Don't change code above this line
 */
 
-	public static Inheritance inheritance = new Inheritance();
+	public static Inheritance inheritance;
 
 	public Semantic(AST.program program)
 	{
 		//Write Semantic analyzer code here
-		//Visitor v = new Visitor();
-		System.out.println("IO index :" + inheritance.getIndex("IO"));
+		Visitor v = new Visitor();
 	}
 }
