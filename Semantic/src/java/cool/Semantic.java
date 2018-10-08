@@ -1,5 +1,8 @@
 package cool;
 
+import java.util.*;
+
+
 public class Semantic
 {
 	private boolean errorFlag = false;
@@ -17,11 +20,12 @@ public class Semantic
 	Don't change code above this line
 */
 
-	public static Inheritance inheritance;
+	public static Inheritance inheritance = new Inheritance();
+
 	public Semantic(AST.program program)
 	{
 		//Write Semantic analyzer code here
-		Visitor v = new Visitor();
-		
+		//Visitor v = new Visitor();
+		System.out.println("IO index :" + inheritance.getIndex("IO"));
 	}
 }
