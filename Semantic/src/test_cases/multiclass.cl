@@ -6,6 +6,7 @@ class Main {
 
 class A inherits B {
 	i : Int;
+	foo() : Int { 1 };
 };
 
 class B inherits A {
@@ -18,4 +19,5 @@ class C inherits D {
 
 class D inherits C {
 	i : Int;
+	foo() : Int { 1 };
 };
