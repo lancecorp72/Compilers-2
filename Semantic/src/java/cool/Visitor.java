@@ -1,11 +1,23 @@
 package cool;
 
+import java.util.*;
+
 public class Visitor
 {
 
-	public void visit(AST.program prog)
+	public void visit(AST.program program)
 	{
-		Semantic.inheritance = new Inheritance();
+		for(AST.class_ newClass: program.classes)
+		{
+			Semantic.inheritance.insertClass(newClass);
+		}
+
+		Semantic.inheritance.CheckClass();
+		if(Semantic.getErrorFlagInProgram())
+			return;
+		Semantic.inheritance.CheckCycle();
+		if(Semantic.getErrorFlagInProgram())
+			return;
 	}
 
 }

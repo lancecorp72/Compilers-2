@@ -6,67 +6,157 @@ class Node
 {
 	public String name;
 	public int index;
-	public int parentIndex;
-	public HashMap<String,AST.attr> variables;
-	public HashMap<String,AST.method> functions;
+	public String parent;
+	public String filename;
+	public int lineNo;
+	public HashMap<String,AST.attr> attributes;
+	public HashMap<String,AST.method> methods;
 
-	Node(String n, int i, int pi, HashMap<String,AST.attr> v, HashMap<String,AST.method> f)
+	Node(String n, int i, String p, String f, int l, HashMap<String,AST.attr> as, HashMap<String,AST.method> ms)
 	{
 		name = n;
 		index = i;
-		parentIndex = pi;
-		variables = new HashMap<String,AST.attr>();
-		variables.putAll(v);
-		functions = new HashMap<String,AST.method>();
-		functions.putAll(f);
+		parent = p;
+		filename = f;
+		lineNo = l;
+		attributes = new HashMap<String,AST.attr>();
+		attributes.putAll(as);
+		methods = new HashMap<String,AST.method>();
+		methods.putAll(ms);
 	}
 }
 
 public class Inheritance
 {
-	private static Node ROOT = new Node("Object",0,-1,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
+	private static Node ROOT = new Node("Object",0,null,"Inbuilt Classes",0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
 
 	private ArrayList<Node> graph;
-	private HashMap<String,Integer> ClassList;
+	private HashMap<String,Integer> classList;
 
 	public Inheritance()
 	{
 		graph = new ArrayList<Node>();
-		ClassList = new HashMap<String,Integer>();
+		classList = new HashMap<String,Integer>();
 		graphInitialize();
 	}
 
 	void graphInitialize()
 	{
 		//Object Class
-		ROOT.functions.put("abort", new AST.method("abort",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
-		ROOT.functions.put("type_name", new AST.method("type_name",new ArrayList<AST.formal>(),"String",new AST.no_expr(0),0));
-		ROOT.functions.put("copy", new AST.method("copy",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
+		ROOT.methods.put("abort", new AST.method("abort",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
+		ROOT.methods.put("type_name", new AST.method("type_name",new ArrayList<AST.formal>(),"String",new AST.no_expr(0),0));
+		ROOT.methods.put("copy", new AST.method("copy",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
 		graph.add(ROOT);
-		ClassList.put("Object",0);
+		classList.put("Object",0);
 
 		//IO Class
-		Node IOClass = new Node("IO",1,0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
-		IOClass.functions.put("in_string", new AST.method("in_string",new ArrayList<AST.formal>(),"String",new AST.no_expr(0),0));
-		IOClass.functions.put("in_int", new AST.method("in_int",new ArrayList<AST.formal>(),"Int",new AST.no_expr(0),0));
-		IOClass.functions.put("out_string", new AST.method("out_string",Arrays.asList(new AST.formal("x","String",0)),"IO",new AST.no_expr(0),0));
-		IOClass.functions.put("out_int", new AST.method("out_int",Arrays.asList(new AST.formal("x","Int",0)),"IO",new AST.no_expr(0),0));
+		Node IOClass = new Node("IO",1,"Object","Inbuilt Classes",0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
+		IOClass.methods.put("in_string", new AST.method("in_string",new ArrayList<AST.formal>(),"String",new AST.no_expr(0),0));
+		IOClass.methods.put("in_int", new AST.method("in_int",new ArrayList<AST.formal>(),"Int",new AST.no_expr(0),0));
+		IOClass.methods.put("out_string", new AST.method("out_string",Arrays.asList(new AST.formal("x","String",0)),"IO",new AST.no_expr(0),0));
+		IOClass.methods.put("out_int", new AST.method("out_int",Arrays.asList(new AST.formal("x","Int",0)),"IO",new AST.no_expr(0),0));
 		graph.add(IOClass);
-		ClassList.put("IO",1);
+		classList.put("IO",1);
 
 		//Int Class
-		Node IntClass = new Node("Int",2,0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
+		Node IntClass = new Node("Int",2,"Object","Inbuilt Classes",0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
 		graph.add(IntClass);
-		ClassList.put("Int",2);
+		classList.put("Int",2);
 
 		//Bool Class
-		Node BoolClass = new Node("Bool",3,0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
+		Node BoolClass = new Node("Bool",3,"Object","Inbuilt Classes",0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
 		graph.add(BoolClass);
-		ClassList.put("Bool",3);
+		classList.put("Bool",3);
+
+		//String Class
+		Node StringClass = new Node("String",4,"Object","Inbuilt Classes",0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
+		StringClass.methods.put("length", new AST.method("length",new ArrayList<AST.formal>(),"Int",new AST.no_expr(0),0));
+		StringClass.methods.put("concat", new AST.method("concat",Arrays.asList(new AST.formal("s","String",0)),"String",new AST.no_expr(0),0));
+		StringClass.methods.put("substr", new AST.method("substr",Arrays.asList(new AST.formal("i","Int",0),new AST.formal("l","Int",0)),"String",new AST.no_expr(0),0));
+		graph.add(StringClass);
+		classList.put("String",4);
 	}
 
-	int getIndex(String name)
+	public Integer getIndex(String name)
 	{
-		return ClassList.get(name);
+		return classList.get(name);
 	}
+
+	//Insert non-duplicate class into Inheritance graph
+	public void insertClass(AST.class_ newClass)
+	{
+		//Checking existence of another class with same name
+		if(classList.containsKey(newClass.name))
+		{
+			if(getIndex(newClass.name)<=4)
+				Semantic.reportError(newClass.filename,newClass.lineNo,"Basic Class '"+newClass.name+"' redefined");
+			else
+				Semantic.reportError(newClass.filename,newClass.lineNo,"Second definition of '"+newClass.name+"' class");
+		}
+		else
+		{
+			classList.put(newClass.name,graph.size());
+			HashMap<String,AST.method> nodeMethods = new HashMap<String,AST.method>();
+			HashMap<String,AST.attr> nodeAttributes = new HashMap<String,AST.attr>();
+			for(AST.feature f: newClass.features)
+			{
+				//Checking whether if Method or Attribute
+				if(f instanceof AST.method)
+				{
+					AST.method m = (AST.method)f;
+					nodeMethods.put(m.name,m);
+				}
+				else
+				{
+					AST.attr a = (AST.attr)f;
+					nodeAttributes.put(a.name,a);
+				}
+			}
+			Node newNode = new Node(newClass.name,graph.size(),newClass.parent,newClass.filename,newClass.lineNo,nodeAttributes,nodeMethods);
+			graph.add(newNode);
+		}
+	}
+
+	//Checking validity of all Classes
+	public void CheckClass()
+	{
+		//Checking if 'Main' class exists and it has a 'main()' method
+		if(classList.containsKey("Main"))
+		{
+			Node n = graph.get(classList.get("Main"));
+			if(n.methods.containsKey("main"))
+			{
+				if(!n.methods.get("main").formals.isEmpty())
+					Semantic.reportError((graph.get(5)).filename,1,"main() Method in Main Class should not take any arguments");
+			}
+			else
+				Semantic.reportError((graph.get(5)).filename,1,"Main Class doesn't contain main() Method");
+		}
+		else
+			Semantic.reportError("",0,"Main Class not defined in program");
+
+		for(int i=1; i<graph.size(); i++)
+		{
+			Node graphNode = graph.get(i);
+
+			//Checking if parent class exists in Graph
+			if(classList.containsKey(graphNode.parent))
+			{
+				//Checking if class derives from a non-derivable class
+				if(Arrays.asList("String","Int","Bool").contains(graphNode.parent))
+					Semantic.reportError(graphNode.filename,graphNode.lineNo,"Class '"+graphNode.name+"' derives from non-derivable base class '"+graphNode.parent+"'");
+			}
+			else
+				Semantic.reportError(graphNode.filename,graphNode.lineNo,"'"+graphNode.name+"' derives from non-existent class '"+graphNode.parent+"'");
+		}
+	}
+
+	public void CheckCycle()
+	{
+		ArrayList<Boolean> visit = new ArrayList<Boolean>(graph.size());
+		Collections.fill(visit,Boolean.FALSE);
+
+
+	}
+
 }
