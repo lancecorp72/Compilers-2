@@ -4,7 +4,7 @@ import java.util.*;
 
 public class Visitor
 {
-
+	
 	public void visit(AST.program program)
 	{
 		for(AST.class_ newClass: program.classes)
@@ -18,6 +18,7 @@ public class Visitor
 		Semantic.inheritance.CheckCycle();
 		if(Semantic.getErrorFlagInProgram())
 			return;
+		Semantic.inheritance.FuncMangledNames();
 	}
 
 }

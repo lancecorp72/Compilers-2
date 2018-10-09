@@ -32,11 +32,12 @@ public class Inheritance
 
 	private ArrayList<Node> graph;
 	private HashMap<String,Integer> classList;
-
+	private HashMap<String,String> mangledNames;
 	public Inheritance()
 	{
 		graph = new ArrayList<Node>();
 		classList = new HashMap<String,Integer>();
+		mangledNames = new HashMap<String,String>();
 		graphInitialize();
 	}
 
@@ -157,6 +158,44 @@ public class Inheritance
 		Collections.fill(visit,Boolean.FALSE);
 
 
+	}
+	
+	public void FuncMangledNames()
+	{
+		for(int i=0; i<graph.size(); i++)
+		{
+			Node graphNode = graph.get(i);
+			for (Map.Entry<String, AST.method> entry : graphNode.methods.entrySet())  
+            {
+            	String temp = "";
+            	temp += "_CN";
+            	String funcName = entry.getValue().name;
+            	String className = graphNode.name;
+            	temp += (Integer.toString(className.length()));
+            	temp += (className);
+            	temp += ("_FN");
+            	temp += (Integer.toString(funcName.length()));
+            	temp += (funcName);
+            	temp += ("_AL");
+            	temp += (Integer.toString(entry.getValue().formals.size()));
+            	if(entry.getValue().formals.size() == 0)
+            		temp += ("_NP_");
+            	else
+            	{
+            		for(int j = 0; j < entry.getValue().formals.size(); j++)
+            		{
+            			temp += (Integer.toString(j));
+            			temp += ("N");
+            			temp += (Integer.toString(entry.getValue().formals.get(j).typeid.length()));
+            			temp.concat(entry.getValue().formals.get(j).typeid);
+            		}
+            	}
+            	entry.getValue().mname = temp;
+           		//System.out.println(temp);
+            	mangledNames.put(temp,entry.getValue().typeid);
+            }
+            
+		}
 	}
 
 }

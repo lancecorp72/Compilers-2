@@ -6,8 +6,10 @@ class Main {
 
 class Abc {
 	i : Int;
+	foo() : Int { 1 };
 };
 
 class Ab inherits Abc {
 	i : Int;
+	foo() : Int { 1 };
 };
