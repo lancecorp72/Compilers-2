@@ -11,6 +11,13 @@ public class Visitor
 		{
 			Semantic.inheritance.insertClass(newClass);
 		}
+
+		Semantic.inheritance.CheckClass();
+		if(Semantic.getErrorFlagInProgram())
+			return;
+		Semantic.inheritance.CheckCycle();
+		if(Semantic.getErrorFlagInProgram())
+			return;
 	}
 
 }

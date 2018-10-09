@@ -20,6 +20,11 @@ public class Semantic
 	Don't change code above this line
 */
 
+	public static boolean getErrorFlagInProgram()
+	{
+		return errorFlag;
+	}
+
 	public static Inheritance inheritance;
 
 	public Semantic(AST.program program)

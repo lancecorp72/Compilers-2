@@ -8,6 +8,6 @@ class Abc {
 	i : Int;
 };
 
-class Ab inherits Main {
+class Ab inherits Abc {
 	i : Int;
 };
