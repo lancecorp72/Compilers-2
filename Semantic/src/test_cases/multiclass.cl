@@ -4,10 +4,18 @@ class Main {
 	};
 };
 
-class Abc {
+class A inherits B {
 	i : Int;
 };
 
-class Ab inherits Abc {
+class B inherits A {
+	i : Int;
+};
+
+class C inherits D {
+	i : Int;
+};
+
+class D inherits C {
 	i : Int;
 };
