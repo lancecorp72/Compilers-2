@@ -2,6 +2,7 @@ package cool;
 
 import java.util.*;
 
+//Class which defines each Node in Inheritance Graph
 class Node
 {
 	public String name;
@@ -12,6 +13,7 @@ class Node
 	public HashMap<String,AST.attr> attributes;
 	public HashMap<String,AST.method> methods;
 
+	//Constructor
 	Node(String n, int i, String p, String f, int l, HashMap<String,AST.attr> as, HashMap<String,AST.method> ms)
 	{
 		name = n;
@@ -26,6 +28,7 @@ class Node
 	}
 }
 
+//Class to build an Inheritance Graph
 public class Inheritance
 {
 	private static Node ROOT = new Node("Object",0,null,"Inbuilt Classes",0,new HashMap<String,AST.attr>(),new HashMap<String,AST.method>());
@@ -33,6 +36,8 @@ public class Inheritance
 	private ArrayList<Node> graph;
 	private HashMap<String,Integer> classList;
 	private HashMap<String,String> mangledNames;
+
+	//Constructor
 	public Inheritance()
 	{
 		graph = new ArrayList<Node>();
@@ -41,6 +46,7 @@ public class Inheritance
 		graphInitialize();
 	}
 
+	//Initialize Inheritance Graph with Base classes
 	void graphInitialize()
 	{
 		//Object Class
@@ -78,12 +84,13 @@ public class Inheritance
 		classList.put("String",4);
 	}
 
+	//Returns index of corresponding Class
 	public Integer getIndex(String name)
 	{
 		return classList.get(name);
 	}
 
-	//Insert non-duplicate class into Inheritance graph
+	//Insert non-duplicate class into Inheritance Graph
 	public void insertClass(AST.class_ newClass)
 	{
 		//Checking existence of another class with same name
@@ -152,12 +159,42 @@ public class Inheritance
 		}
 	}
 
+	//Checking existence of Cycles in Graph
 	public void CheckCycle()
 	{
-		ArrayList<Boolean> visit = new ArrayList<Boolean>(graph.size());
-		Collections.fill(visit,Boolean.FALSE);
+		boolean[] isVisited = new boolean[graph.size()];
+		boolean isCycle=false;
 
+		//Setting all Base Classes as visited
+		for(int i=0; i<=4; i++)
+			isVisited[i]=true;
 
+		//Visiting rest of the classes
+		for(int i=5; i<graph.size(); i++)
+		{
+			int index=i;
+			String cycle="";
+			ArrayList<String> path = new ArrayList<String>();
+
+			//Traversing up a chain of inherited classes
+			while(!isVisited[index])
+			{
+				isVisited[index] = true;
+				path.add(graph.get(index).name);
+				index = getIndex(graph.get(index).parent);
+			}
+
+			//Finding cycles in Graph
+			if(path.contains(graph.get(index).name))
+			{
+				isCycle = true;
+				cycle += "Cycle encountered in Inheritance Graph : ";
+				for(int j=0; j<path.size(); j++)
+					cycle += path.get(j)+", ";
+				cycle += graph.get(index).name;
+				Semantic.reportError(graph.get(index).filename,graph.get(index).lineNo,cycle);
+			}
+		}
 	}
 	
 	public void FuncMangledNames()
