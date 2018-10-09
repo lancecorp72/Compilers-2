@@ -5,18 +5,18 @@ import java.util.*;
 public class Visitor
 {
 	
-	public void visit(AST.program program)
+	public void Visit(AST.program program)
 	{
 		for(AST.class_ newClass: program.classes)
 		{
-			Semantic.inheritance.insertClass(newClass);
+			Semantic.inheritance.InsertClass(newClass);
 		}
 
 		Semantic.inheritance.CheckClass();
-		if(Semantic.getErrorFlagInProgram())
+		if(Semantic.GetErrorFlagInProgram())
 			return;
 		Semantic.inheritance.CheckCycle();
-		if(Semantic.getErrorFlagInProgram())
+		if(Semantic.GetErrorFlagInProgram())
 			return;
 		Semantic.inheritance.FuncMangledNames();
 	}

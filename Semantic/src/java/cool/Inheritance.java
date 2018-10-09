@@ -43,11 +43,11 @@ public class Inheritance
 		graph = new ArrayList<Node>();
 		classList = new HashMap<String,Integer>();
 		mangledNames = new HashMap<String,String>();
-		graphInitialize();
+		GraphInitialize();
 	}
 
 	//Initialize Inheritance Graph with Base classes
-	void graphInitialize()
+	void GraphInitialize()
 	{
 		//Object Class
 		ROOT.methods.put("abort", new AST.method("abort",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
@@ -85,18 +85,18 @@ public class Inheritance
 	}
 
 	//Returns index of corresponding Class
-	public Integer getIndex(String name)
+	public Integer GetIndex(String name)
 	{
 		return classList.get(name);
 	}
 
 	//Insert non-duplicate class into Inheritance Graph
-	public void insertClass(AST.class_ newClass)
+	public void InsertClass(AST.class_ newClass)
 	{
 		//Checking existence of another class with same name
 		if(classList.containsKey(newClass.name))
 		{
-			if(getIndex(newClass.name)<=4)
+			if(GetIndex(newClass.name)<=4)
 				Semantic.reportError(newClass.filename,newClass.lineNo,"Basic Class '"+newClass.name+"' redefined");
 			else
 				Semantic.reportError(newClass.filename,newClass.lineNo,"Second definition of '"+newClass.name+"' class");
@@ -181,7 +181,7 @@ public class Inheritance
 			{
 				isVisited[index] = true;
 				path.add(graph.get(index).name);
-				index = getIndex(graph.get(index).parent);
+				index = GetIndex(graph.get(index).parent);
 			}
 
 			//Finding cycles in Graph

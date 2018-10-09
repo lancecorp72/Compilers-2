@@ -20,7 +20,7 @@ public class Semantic
 	Don't change code above this line
 */
 
-	public static boolean getErrorFlagInProgram()
+	public static boolean GetErrorFlagInProgram()
 	{
 		return errorFlag;
 	}
@@ -32,6 +32,6 @@ public class Semantic
 		//Write Semantic analyzer code here
 		inheritance = new Inheritance();
 		Visitor v = new Visitor();
-		v.visit(program);
+		v.Visit(program);
 	}
 }
