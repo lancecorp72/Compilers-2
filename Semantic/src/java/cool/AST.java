@@ -381,13 +381,11 @@ public class AST{
 	}
 	public static class method extends feature {
 		public String name;
-		public String mname;
 		public List<formal> formals;
 		public String typeid;
 		public expression body;
 		public method(String n, List<formal> f, String t, expression b, int l){
 			name = n;
-			mname = "";
 			formals = f;
 			typeid = t;
 			body = b;

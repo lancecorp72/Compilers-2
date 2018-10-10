@@ -30,7 +30,6 @@ public class Visitor
 		Semantic.inheritance.CheckCycle();
 		if(Semantic.GetErrorFlagInProgram())
 			return;
-		Semantic.inheritance.FuncMangledNames();
 		Semantic.inheritance.CheckInheritedFeatures();
 
 		//Visit all Nodes of AST
@@ -357,21 +356,26 @@ public class Visitor
 
 			if(Semantic.inheritance.GetClassIndex(expr.typeid) == null)
 			{
-				Semantic.reportError(filename,expr.lineNo, "Undefined type " + expr.typeid);
+				Semantic.reportError(filename,expr.lineNo, "Undefined Class type '"+expr.typeid+"'");
 				expr.typeid = "Object";
 				expr.type = "Object";
 			}
-			else if(!Semantic.inheritance.isConforming(expr.typeid,expr.caller.type))
+			else if(Semantic.inheritance.isConforming(expr.typeid,expr.caller.type)==false)
 			{
-				Semantic.reportError(filename,expr.lineNo,"Type of caller '" + expr.typeid + "' cannot conform to type in Static Dispatch '" + expr.name + "'");
+				Semantic.reportError(filename,expr.lineNo,"Caller of Type: '" + expr.typeid + "' cannot conform to Static Dispatch Type :'" + expr.name + "'");
 				expr.type = "Object";
 			
 			}
 			
-			boolean t = Semantic.inheritance.GetClassMethods(expr.caller.type).containsKey(expr.name);
-			if(t == false)
+			ArrayList<AST.formal> lf = new ArrayList<AST.formal>();
+			for(AST.expression e: expr.actuals)
+				lf.add(new AST.formal("",e.type,0));
+			AST.method m = new AST.method(expr.name,lf,"",(AST.expression)new AST.no_expr(0),0);
+			String s = Semantic.inheritance.GetMangledName(expr.caller.type,m);
+
+			if(Semantic.inheritance.CheckMangledName(s)==false)
 			{
-				Semantic.reportError(filename,expr.lineNo,"Undefined method in class " + expr.typeid);
+				Semantic.reportError(filename,expr.lineNo,"Undefined Method '"+expr.name+"' in Class '"+expr.typeid+"'");
 				expr.type = "Object";
 			}
 			else
@@ -380,49 +384,30 @@ public class Visitor
 			}
 		}
 
-		/*else if(exp instanceof AST.dispatch)
+		//Dispatch
+		else if(exp instanceof AST.dispatch)
 		{
 			AST.dispatch expr = (AST.dispatch)exp;
-			Visit(expr.caller);	
+			Visit(expr.caller);
 			for(AST.expression e : expr.actuals)
 				Visit(e);
 			
-			
-			String t = Semantic.inheritance.GetMangeledName(expr.name);
-			if(t == null)
+			ArrayList<AST.formal> lf = new ArrayList<AST.formal>();
+			for(AST.expression e: expr.actuals)
+				lf.add(new AST.formal("",e.type,0));
+			AST.method m = new AST.method(expr.name,lf,"",(AST.expression)new AST.no_expr(0),0);
+			String s = Semantic.inheritance.GetMangledName(expr.caller.type,m);
+
+			if(Semantic.inheritance.CheckMangledName(s)==false)
 			{
-				Semantic.reportError(filename,expr.lineNo, "Method " + expr.name + " not found in class " + expr.caller.type);
+				Semantic.reportError(filename,expr.lineNo,"Undefined Method '"+expr.name+"' in Class '"+expr.caller.type+"'");
 				expr.type = "Object";
-			
-			}
-			int count = 0;
-			int len = 0,id = -1;
-			for(int i = 0; i < t.length(); i++)
-			{
-				if(t.charAt(i) == '_')
-					count++;
-				if(count == 2 && id == -1)
-					id = i + 1;
-				if(count == 2)
-					len++;
-				if(count == 3)
-					break;
-			} 
-			String typ = t.substring(id,len);
-			while
-			{
-				//check if type matches for any of the parent classes
-			}
-			if(//Doesnt match)
-			{
-				Semantic.reportError(filename,expr.lineNo, "Method " + expr.name + " not found in class " + expr.caller.type);
-				expr.type = "Object";
-			
 			}
 			else
-				expr.type = Semantic.inheritance.GetMangeledType(expr.name);
-			
-		}*/
+			{
+				expr.type = Semantic.inheritance.GetClassMethods(expr.caller.type).get(expr.name).typeid;	
+			}
+		}
     
     	//Let
 		else if (exp instanceof AST.let)

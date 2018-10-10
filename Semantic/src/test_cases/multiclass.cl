@@ -1,27 +1,29 @@
 class Main {
-	main():IO {
-		new IO.out_string("Hello world!\n")
+	a : A;
+	b : B;
+	main() : Int {
+		{
+			a.fo(1);
+			b.foo();
+			1;
+		}
 	};
 };
 
 --multiple Declarations of class A
-class A inherits B {
+class A {
 	j : Int;
-	foo1() : Bool { true };
+	fo(i : Int) : Bool { true };
 };
 
-class B {
-	i : Bool;
-	foo(i : Int) : Int { 1 };
+class B inherits C {
+	k : Int;
+	foo() : Int { 2 };
 };
 
 class C {
-	i : A;
-	j : B;
-	foo() : Object { i <- j };
+	i : Bool;
+	foo() : Int { 1 };
 };
 
-class A{
-	j : Int <- 0;
 
-};
