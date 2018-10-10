@@ -433,9 +433,9 @@ public class Visitor
 				Semantic.reportError(filename,expr.lineNo,"Bounding self in let not possible");	
 			else
 			{
-				if(Semantic.inheritance.GetClassIndex(expr.type) == null)
+				if(Semantic.inheritance.GetClassIndex(expr.typeid) == null)
 				{
-					Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.type);
+					Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.typeid);
 					expr.type = "Object";
 				}		
 				if(!(expr.value instanceof AST.no_expr))

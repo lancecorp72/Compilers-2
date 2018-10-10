@@ -3,18 +3,21 @@ class Main {
 		new IO.out_string("Hello world!\n")
 	};
 };
-
---multiple Declarations of class A
+--cycle present B <- A <- C <- B
 class A inherits B {
 	foo1() : Bool { true };
 };
 
-class B {
+class B inherits C{
 	i : Bool;
 	foo(i : Int) : Int { let i : Int <-1 in i };
 };
 
-class A{
-	j : Int <- 0;
+class C inherits A{
+	a : String;
+	foo2(i:Int) : Int { i + 2 };
 
 };
+
+
+
