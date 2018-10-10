@@ -85,9 +85,27 @@ public class Inheritance
 	}
 
 	//Returns index of corresponding Class
-	public Integer GetIndex(String name)
+	public Integer GetClassIndex(String name)
 	{
 		return classList.get(name);
+	}
+
+	//Returns filename of corresponding Class
+	public String GetClassFilename(String name)
+	{
+		return graph.get(classList.get(name)).filename;
+	}
+
+	//Returns Attribute Hashmap of corresponding Class
+	public HashMap<String,AST.attr> GetClassAttrs(String name)
+	{
+		return graph.get(classList.get(name)).attributes;
+	}
+
+	//Returns Method Hashmap of corresponding Class
+	public HashMap<String,AST.method> GetClassMethods(String name)
+	{
+		return graph.get(classList.get(name)).methods;
 	}
 
 	//Insert non-duplicate class into Inheritance Graph
@@ -96,7 +114,7 @@ public class Inheritance
 		//Checking existence of another class with same name
 		if(classList.containsKey(newClass.name))
 		{
-			if(GetIndex(newClass.name)<=4)
+			if(GetClassIndex(newClass.name)<=4)
 				Semantic.reportError(newClass.filename,newClass.lineNo,"Basic Class '"+newClass.name+"' redefined");
 			else
 				Semantic.reportError(newClass.filename,newClass.lineNo,"Second definition of '"+newClass.name+"' class");
@@ -112,12 +130,18 @@ public class Inheritance
 				if(f instanceof AST.method)
 				{
 					AST.method m = (AST.method)f;
-					nodeMethods.put(m.name,m);
+					if(!nodeMethods.containsKey(m.name))
+						nodeMethods.put(m.name,m);
+					else
+						Semantic.reportError(newClass.filename,m.lineNo,"Multiple definitions of '"+m.name+"()' Method in Class "+newClass.name);
 				}
 				else
 				{
 					AST.attr a = (AST.attr)f;
-					nodeAttributes.put(a.name,a);
+					if(!nodeAttributes.containsKey(a.name))
+						nodeAttributes.put(a.name,a);
+					else
+						Semantic.reportError(newClass.filename,a.lineNo,"Multiple definitions of '"+a.name+"' Attribute in Class "+newClass.name);
 				}
 			}
 			Node newNode = new Node(newClass.name,graph.size(),newClass.parent,newClass.filename,newClass.lineNo,nodeAttributes,nodeMethods);
@@ -181,7 +205,7 @@ public class Inheritance
 			{
 				isVisited[index] = true;
 				path.add(graph.get(index).name);
-				index = GetIndex(graph.get(index).parent);
+				index = GetClassIndex(graph.get(index).parent);
 			}
 
 			//Finding cycles in Graph
@@ -202,7 +226,7 @@ public class Inheritance
 		for(int i=0; i<graph.size(); i++)
 		{
 			Node graphNode = graph.get(i);
-			for (Map.Entry<String, AST.method> entry : graphNode.methods.entrySet())  
+			for (Map.Entry<String,AST.method> entry : graphNode.methods.entrySet())  
             {
             	String temp = "";
             	temp += "_CN";
@@ -228,7 +252,6 @@ public class Inheritance
             		}
             	}
             	entry.getValue().mname = temp;
-           		//System.out.println(temp);
             	mangledNames.put(temp,entry.getValue().typeid);
             }
             
