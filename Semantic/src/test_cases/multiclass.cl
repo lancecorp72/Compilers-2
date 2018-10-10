@@ -4,6 +4,7 @@ class Main {
 	};
 };
 
+--multiple Declarations of class A
 class A inherits B {
 	j : Int;
 	foo1() : Bool { true };
@@ -20,3 +21,7 @@ class C {
 	foo() : Object { i <- j };
 };
 
+class A{
+	j : Int <- 0;
+
+};

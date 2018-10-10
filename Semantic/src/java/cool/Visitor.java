@@ -432,9 +432,10 @@ public class Visitor
 
 			if(Semantic.inheritance.GetClassIndex(expr.type) == null)
 			{
-				Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.type);
+				Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.typeid);
 				expr.type = "Object";
-			}		
+			}
+      
 			if(!(expr.value instanceof AST.no_expr))
 			{
 				Visit(expr.value);
