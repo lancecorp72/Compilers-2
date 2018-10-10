@@ -112,6 +112,11 @@ public class Inheritance
 	{
 		return mangledNames.get(nameToMname.get(name));
 	}
+
+	public String GetMangledName(String name)
+	{
+		return nameToMname.get(name);
+	}
 	
 	//For checking Validity of Assign Operation
 	public boolean isConforming(String type1, String type2)
@@ -297,6 +302,7 @@ public class Inheritance
             	String funcName = entry.getValue().name;
             	String className = graphNode.name;
             	temp += (Integer.toString(className.length()));
+            	temp += "_";
             	temp += (className);
             	temp += ("_FN");
             	temp += (Integer.toString(funcName.length()));

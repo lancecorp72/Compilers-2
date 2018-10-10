@@ -330,7 +330,7 @@ public class Visitor
 			AST.assign expr = (AST.assign)exp;
 			Visit(expr.e1);
 			if("self".equals(expr.name))
-				Semantic.reportError(filename,expr.lineNo,"Asignment to self not possible");
+				Semantic.reportError(filename,expr.lineNo,"Assignment to self not possible");
 			else
 			{
 				String type = scopeTable.lookUpGlobal(expr.name);
@@ -377,6 +377,96 @@ public class Visitor
 				expr.type = Semantic.inheritance.GetClassMethods(expr.caller.type).get(expr.name).typeid;	
 			}
 		}
+		
+		/*else if(exp instanceof AST.dispatch)
+		{
+			AST.dispatch expr = (AST.dispatch)exp;
+			Visit(expr.caller);	
+			for(AST.expression e : expr.actuals)
+				Visit(e);
+			
+			
+			String t = Semantic.inheritance.GetMangeledName(expr.name);
+			if(t == null)
+			{
+				Semantic.reportError(filename,expr.lineNo, "Method " + expr.name + " not found in class " + expr.caller.type);
+				expr.type = "Object";
+			
+			}
+			int count = 0;
+			int len = 0,id = -1;
+			for(int i = 0; i < t.length(); i++)
+			{
+				if(t.charAt(i) == '_')
+					count++;
+				if(count == 2 && id == -1)
+					id = i + 1;
+				if(count == 2)
+					len++;
+				if(count == 3)
+					break;
+			} 
+			String typ = t.substring(id,len);
+			while
+			{
+				//check if type matches for any of the parent classes
+			}
+			if(//Doesnt match)
+			{
+				Semantic.reportError(filename,expr.lineNo, "Method " + expr.name + " not found in class " + expr.caller.type);
+				expr.type = "Object";
+			
+			}
+			else
+				expr.type = Semantic.inheritance.GetMangeledType(expr.name);
+			
+		}*/
+    
+		else if (exp instanceof AST.let)
+		{
+			AST.let expr = (AST.let)exp;
+			scopeTable.enterScope();
+			if("self".equals(expr.name))
+				Semantic.reportError(filename,expr.lineNo,"Bounding self in let not possible");	
+			else
+			{
+				if(Semantic.inheritance.GetClassIndex(expr.type) == null)
+				{
+					Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.type);
+					expr.type = "Object";
+				}		
+				if(!(expr.value instanceof AST.no_expr))
+				{
+					Visit(expr.value);
+					if(!Semantic.inheritance.isConforming(expr.typeid,expr.value.type))
+					{
+						Semantic.reportError(filename,expr.lineNo,"Expression " + expr.name + " doesn't conform to the declared type " + expr.typeid);
+					
+					}
+				}
+				
+			}
+			Visit(expr.body);
+			expr.type = expr.body.type;
+			scopeTable.exitScope();
+		}
+	}
+  
+	public void Visit(AST.branch expr)
+	{
+		scopeTable.enterScope();
+		if("self".equals(expr.name))
+			Semantic.reportError(filename,expr.lineNo,"Bounding self in case not possible");		
+		else
+		{
+			if(Semantic.inheritance.GetClassIndex(expr.type) == null)
+			{
+				Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.type);
+				expr.type = "Object";
+			}
+		}	
+		Visit(expr.value);
+		scopeTable.exitScope();		
 	}
 
 	public AST.expression BaseExprInit(String s, int l)
