@@ -81,135 +81,176 @@ public class Visitor
 	//Expression Visitor
 	public void Visit(AST.expression exp)
 	{
-
-	}
-  
-	public void Visit(AST.no_expr expr)
-	{
-		expr.type = "_no_type";
-	}
-	
-	public void Visit(AST.bool_const expr)
-	{
-		expr.type = "Bool";
-	}
-	
-	public void Visit(AST.string_const expr)
-	{
-		expr.type = "String";
-	}
-	
-	public void Visit(AST.int_const expr)
-	{
-		expr.type = "Int";
-	}
-	
-	public void Visit(AST.comp expr)
-	{
-		if(!"Bool".equals(expr.e1.type))
+		//No_Expr
+		if(exp instanceof AST.no_expr)
 		{
-			Semantic.reportError(filename,expr.lineNo,"Expression not of bool type");	
+			AST.no_expr expr = (AST.no_expr)exp;
+			expr.type = "No_type";
 		}
-		expr.type = "Bool";
-	}
-	
-	public void Visit(AST.eq expr)
-	{
-		if(!expr.e1.type.equals(expr.e2.type))
+		
+		//Bool
+		else if(exp instanceof AST.bool_const)
 		{
-			Semantic.reportError(filename,expr.lineNo,"Expressions on either side of = different");
-		}
-		else
-		{
+			AST.bool_const expr = (AST.bool_const)exp;
 			expr.type = "Bool";
 		}
-	
-	}
-	
-	public void Visit(AST.leq expr)
-	{
-		if(!expr.e1.type.equals("Int") || !expr.e2.type.equals("Int"))
-			Semantic.reportError(filename,expr.lineNo,"Expression(s) for <= not of Int type");
-		expr.type = "Bool";
-	}
-	
-	public void Visit(AST.lt expr)
-	{
-		if(!expr.e1.type.equals("Int") || !expr.e2.type.equals("Int"))
-			Semantic.reportError(filename,expr.lineNo,"Expression(s) for < not of Int type");
-		expr.type = "Bool";
-	}
-	
-	public void Visit(AST.neg expr)
-	{
-		if(!expr.e1.type.equals("Int"))
-			Semantic.reportError(filename,expr.lineNo,"Cannot negate non-integer expressions");
-		expr.type = "Int";
-	}
-	
-	public void Visit(AST.divide expr) 
-	{
-        if(!expr.e1.type.equals("Int") || !expr.e2.type.equals("Int")) {
-            Semantic.reportError(filename, expr.lineNo, "Division cannot be done for non integers");
-        }
-        expr.type = "Int";
-	}
-	
-	public void Visit(AST.mul expr) 
-	{
-        if(!expr.e1.type.equals("Int") || !expr.e2.type.equals("Int")) {
-            Semantic.reportError(filename, expr.lineNo, "Multiplication cannot be done for non integers");
-        }
-        expr.type = "Int";
-	}
-	
-	public void Visit(AST.sub expr) 
-	{
-        if(!expr.e1.type.equals("Int") || !expr.e2.type.equals("Int")) {
-            Semantic.reportError(filename, expr.lineNo, "Subtraction cannot be done for non integers");
-        }
-        expr.type = "Int";
-	}
-	
-	public void Visit(AST.plus expr) 
-	{
-        if(!expr.e1.type.equals("Int") || !expr.e2.type.equals("Int")) {
-            Semantic.reportError(filename, expr.lineNo, "Addition cannot be done for non integers");
-        }
-        expr.type = "Int";
-	}
-	
-	public void Visit(AST.isvoid expr) 
-	{
-		expr.type = "Bool";
-	}
-	
-	public void Visit(AST.new_ expr)
-	{
-		if(Semantic.inheritance.GetClassIndex(expr.typeid)!=null)
-			expr.type = expr.typeid;
-		else
+		
+		//String
+		else if(exp instanceof AST.string_const)
 		{
-			Semantic.reportError(filename,expr.lineNo,"Undefined type" + expr.typeid + "for new");
-			expr.type = "Object";
+			AST.string_const expr = (AST.string_const)exp;
+			expr.type = "String";
+		}
+		
+		//Int
+		else if(exp instanceof AST.int_const)
+		{
+			AST.int_const expr = (AST.int_const)exp;
+			expr.type = "Int";
+		}
+		
+		//Boolean complement
+		else if(exp instanceof AST.comp)
+		{
+			AST.comp expr = (AST.comp)exp;
+			if(!"Bool".equals(expr.e1.type))
+			{
+				Semantic.reportError(filename,expr.lineNo,"Expression for 'not' is not of Bool type");	
+			}
+			expr.type = "Bool";
+		}
+		
+		//Equal to
+		else if(exp instanceof AST.eq)
+		{
+			AST.eq expr = (AST.eq)exp;
+			if(!expr.e1.type.equals(expr.e2.type))
+			{
+				Semantic.reportError(filename,expr.lineNo,"Type Mismatch of Operands in '=' Expression");
+			}
+			else
+			{
+				expr.type = "Bool";
+			}
+		
+		}
+		
+		//Less than or Equal to
+		else if(exp instanceof AST.leq)
+		{
+			AST.leq expr = (AST.leq)exp;
+			if(!expr.e1.type.equals("Int"))
+				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Expression for '<=' is not of Int type");
+			if(!expr.e2.type.equals("Int"))
+				Semantic.reportError(filename,expr.e2.lineNo,"Right-hand Expression for '<=' is not of Int type");
+			expr.type = "Bool";
+		}
+		
+		//Strictly less than
+		else if(exp instanceof AST.lt)
+		{
+			AST.lt expr = (AST.lt)exp;
+			if(!expr.e1.type.equals("Int"))
+				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Expression for '<' is not of Int type");
+			if(!expr.e2.type.equals("Int"))
+				Semantic.reportError(filename,expr.e2.lineNo,"Right-hand Expression for '<' is not of Int type");
+			expr.type = "Bool";
+		}
+		
+		//Integer Complement
+		else if(exp instanceof AST.neg)
+		{
+			AST.neg expr = (AST.neg)exp;
+			if(!expr.e1.type.equals("Int"))
+				Semantic.reportError(filename,expr.lineNo,"Expression for 'not' is not of Int type");
+			expr.type = "Int";
+		}
+		
+		//Division
+		else if(exp instanceof AST.divide) 
+		{
+			AST.divide expr = (AST.divide)exp;
+	        if(!expr.e1.type.equals("Int"))
+				Semantic.reportError(filename,expr.e1.lineNo,"Dividend is not of Int type");
+			if(!expr.e2.type.equals("Int"))
+				Semantic.reportError(filename,expr.e2.lineNo,"Divisor is not of Int type");
+	        expr.type = "Int";
+		}
+		
+		//Multiplication
+		else if(exp instanceof AST.mul) 
+		{
+			AST.mul expr = (AST.mul)exp;
+	        if(!expr.e1.type.equals("Int"))
+				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Multiplicand is not of Int type");
+			if(!expr.e2.type.equals("Int"))
+				Semantic.reportError(filename,expr.e2.lineNo,"Right-hand Multiplicand is not of Int type");
+	        expr.type = "Int";
+		}
+		
+		//Subtraction
+		else if(exp instanceof AST.sub) 
+		{
+			AST.sub expr = (AST.sub)exp;
+	        if(!expr.e1.type.equals("Int"))
+				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Operand for '-' is not of Int type");
+			if(!expr.e2.type.equals("Int"))
+				Semantic.reportError(filename,expr.e2.lineNo,"Right-hand Operand for '-' is not of Int type");
+	        expr.type = "Int";
+		}
+		
+		//Addition
+		else if(exp instanceof AST.plus) 
+		{
+			AST.plus expr = (AST.plus)exp;
+	        if(!expr.e1.type.equals("Int"))
+				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Operand for '+' is not of Int type");
+			if(!expr.e2.type.equals("Int"))
+				Semantic.reportError(filename,expr.e2.lineNo,"Right-hand Operand for '+' is not of Int type");
+	    	expr.type = "Int";
+		}
+		
+		//Isvoid
+		else if(exp instanceof AST.isvoid) 
+		{
+			AST.isvoid expr = (AST.isvoid)exp;
+			expr.type = "Bool";
+		}
+
+		//New
+		else if(exp instanceof AST.new_)
+		{
+			AST.new_ expr = (AST.new_)exp;
+			if(Semantic.inheritance.GetClassIndex(expr.typeid)!=null)
+				expr.type = expr.typeid;
+			else
+			{
+				Semantic.reportError(filename,expr.lineNo,"Undefined type '" + expr.typeid + "' for 'new' Expression");
+				expr.type = "Object";
+			}
+		}
+
+		//Block
+		else if(exp instanceof AST.block)
+		{
+			AST.block bl = (AST.block)exp;
+			bl.type = bl.l1.get(bl.l1.size()-1).type;
+		}
+		
+		//Loop
+		else if(exp instanceof AST.loop)
+		{
+			AST.loop lp = (AST.loop)exp;
+			if(!lp.predicate.type.equals("Bool"))
+				Semantic.reportError(filename,lp.lineNo,"Loop condition not of Bool type");
+			lp.type = "Object";
 		}
 	}
 	
+
 	public void Visit(AST.assign expr)
 	{
 		//update scope table
-	}
-	
-	public void Visit(AST.block bl)
-	{
-		bl.type = bl.l1.get(bl.l1.size()-1).type;
-	}
-	
-	public void Visit(AST.loop lp)
-	{
-		if(!lp.predicate.type.equals("Bool"))
-			Semantic.reportError(filename,lp.lineNo,"Loop condition not of Bool type");
-		lp.type = "Object";
 	}
 	
 	public void Visit(AST.cond expr)

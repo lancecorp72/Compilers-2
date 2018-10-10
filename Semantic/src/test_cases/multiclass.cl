@@ -11,6 +11,6 @@ class A inherits B {
 
 class B {
 	i : Int;
-	foo(i : Int,i: Int) : Int { 2 };
+	foo(i : Int) : Int { 2 };
 };
 
