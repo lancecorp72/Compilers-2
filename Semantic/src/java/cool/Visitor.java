@@ -329,6 +329,7 @@ public class Visitor
 		{
 			AST.assign expr = (AST.assign)exp;
 			Visit(expr.e1);
+
 			if("self".equals(expr.name))
 				Semantic.reportError(filename,expr.lineNo,"Assignment to self not possible");
 			else
@@ -361,7 +362,7 @@ public class Visitor
 			}
 			else if(!Semantic.inheritance.isConforming(expr.typeid,expr.caller.type))
 			{
-				Semantic.reportError(filename,expr.lineNo,"Type of calller (" + expr.typeid + ") does not conform to the type in static dispatch (" + expr.name + ")");
+				Semantic.reportError(filename,expr.lineNo,"Type of caller '" + expr.typeid + "' cannot conform to type in Static Dispatch '" + expr.name + "'");
 				expr.type = "Object";
 			
 			}
@@ -377,7 +378,7 @@ public class Visitor
 				expr.type = Semantic.inheritance.GetClassMethods(expr.caller.type).get(expr.name).typeid;	
 			}
 		}
-		
+
 		/*else if(exp instanceof AST.dispatch)
 		{
 			AST.dispatch expr = (AST.dispatch)exp;
@@ -422,10 +423,12 @@ public class Visitor
 			
 		}*/
     
+    	//Let
 		else if (exp instanceof AST.let)
 		{
 			AST.let expr = (AST.let)exp;
 			scopeTable.enterScope();
+
 			if("self".equals(expr.name))
 				Semantic.reportError(filename,expr.lineNo,"Bounding self in let not possible");	
 			else
@@ -450,13 +453,21 @@ public class Visitor
 			expr.type = expr.body.type;
 			scopeTable.exitScope();
 		}
+  		
+  		//Case
+  		else if (exp instanceof AST.typcase)
+		{
+
+		}
 	}
-  
+
+	//Branch
 	public void Visit(AST.branch expr)
 	{
 		scopeTable.enterScope();
+
 		if("self".equals(expr.name))
-			Semantic.reportError(filename,expr.lineNo,"Bounding self in case not possible");		
+			Semantic.reportError(filename,expr.lineNo,"Bounding self in case not possible");
 		else
 		{
 			if(Semantic.inheritance.GetClassIndex(expr.type) == null)
