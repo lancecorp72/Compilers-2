@@ -6,12 +6,19 @@ class Main {
 
 --multiple Declarations of class A
 class A inherits B {
+	j : Int;
 	foo1() : Bool { true };
 };
 
 class B {
 	i : Bool;
-	foo(i : Int) : Int { let i : Int <-1 in i };
+	foo(i : Int) : Int { 1 };
+};
+
+class C {
+	i : A;
+	j : B;
+	foo() : Object { i <- j };
 };
 
 class A{
