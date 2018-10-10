@@ -5,12 +5,11 @@ class Main {
 };
 
 class A inherits B {
-	i : Int;
-	foo() : Int { 1 };
+	foo1() : Bool { true };
 };
 
 class B {
-	i : Int;
-	foo(i : Int) : Int { 2 };
+	i : Bool;
+	foo(i : Int) : Int { let i : Int <-1 in i };
 };
 

@@ -50,6 +50,7 @@ public class AST{
 		public bool_const(boolean v, int l){
 			value = v;
 			lineNo = l;
+			type = "Bool";
 		}
 		String getString(String space){
 			return space+"#"+lineNo+"\n"+space+"_bool\n"+space+sp+(value?"1":"0")+"\n"+space+": "+type;
@@ -60,6 +61,7 @@ public class AST{
 		public string_const(String v, int l){
 			value = v;
 			lineNo = l;
+			type = "String";
 		}
 		String getString(String space){
 			return space+"#"+lineNo+"\n"+space+"_string\n"+space+sp+"\""+escapeSpecialCharacters(value)+"\""+"\n"+space+": "+type;
@@ -71,6 +73,7 @@ public class AST{
 		public int_const(int v, int l){
 			value = v;
 			lineNo = l;
+			type = "Int";
 		}
 		String getString(String space){
 			return space+"#"+lineNo+"\n"+space+"_int\n"+space+sp+value+"\n"+space+": "+type;

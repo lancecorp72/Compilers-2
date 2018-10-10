@@ -55,6 +55,7 @@ public class Inheritance
 		ROOT.methods.put("abort", new AST.method("abort",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
 		ROOT.methods.put("type_name", new AST.method("type_name",new ArrayList<AST.formal>(),"String",new AST.no_expr(0),0));
 		ROOT.methods.put("copy", new AST.method("copy",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
+		ROOT.attributes.put("self", new AST.attr("self","SELF_TYPE",new AST.expression(),0));
 		graph.add(ROOT);
 		classList.put("Object",0);
 
@@ -89,7 +90,9 @@ public class Inheritance
 	//Returns index of corresponding Class
 	public Integer GetParentIndex(String name)
 	{
-		return classList.get(graph.get(classList.get(name)).parent);
+		if(classList.containsKey(name))
+			return classList.get(graph.get(classList.get(name)).parent);
+		return null;
 	}
 
 	//Returns index of corresponding Class
@@ -101,17 +104,21 @@ public class Inheritance
 	//Returns filename of corresponding Class
 	public String GetClassFilename(String name)
 	{
-		return graph.get(classList.get(name)).filename;
+		if(classList.containsKey(name))
+			return graph.get(classList.get(name)).filename;
+		return "";
 	}
 	public String GetMangledType(String name)
 	{
 		return mangledNames.get(nameToMname.get(name));
 	}
+
 	public String GetMangledName(String name)
 	{
 		return nameToMname.get(name);
 	}
 	
+	//For checking Validity of Assign Operation
 	public boolean isConforming(String type1, String type2)
 	{
 		//type1 <- type2
@@ -128,6 +135,7 @@ public class Inheritance
 		}
 		return false;
 	}
+
 	//Finds Least Common Ancestor of two given Classes
 	public String GetLCA(String cl1, String cl2)
 	{
