@@ -10,19 +10,13 @@ class Main {
 	};
 };
 
---multiple Declarations of class A
-class A {
+--Multiple different Redefinitons of foo()
+class A inherits B {
 	j : Int;
 	fo(i : Int) : Bool { true };
 };
 
-class B inherits C {
-	k : Int;
-	foo() : Int { 2 };
-};
-
-class C {
-	i : Bool;
+class B {
 	foo() : Int { 1 };
 };
 
