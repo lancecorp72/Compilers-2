@@ -31,6 +31,7 @@ public class Visitor
 		if(Semantic.GetErrorFlagInProgram())
 			return;
 		Semantic.inheritance.FuncMangledNames();
+		Semantic.inheritance.CheckInheritedFeatures();
 
 		//Visit all Nodes of AST
 		for(AST.class_ newClass: program.classes)
@@ -429,26 +430,21 @@ public class Visitor
 			AST.let expr = (AST.let)exp;
 			scopeTable.enterScope();
 
-			if("self".equals(expr.name))
-				Semantic.reportError(filename,expr.lineNo,"Bounding self in let not possible");	
-			else
+			if(Semantic.inheritance.GetClassIndex(expr.type) == null)
 			{
-				if(Semantic.inheritance.GetClassIndex(expr.type) == null)
+				Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.type);
+				expr.type = "Object";
+			}		
+			if(!(expr.value instanceof AST.no_expr))
+			{
+				Visit(expr.value);
+				if(!Semantic.inheritance.isConforming(expr.typeid,expr.value.type))
 				{
-					Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.type);
-					expr.type = "Object";
-				}		
-				if(!(expr.value instanceof AST.no_expr))
-				{
-					Visit(expr.value);
-					if(!Semantic.inheritance.isConforming(expr.typeid,expr.value.type))
-					{
-						Semantic.reportError(filename,expr.lineNo,"Expression " + expr.name + " doesn't conform to the declared type " + expr.typeid);
-					
-					}
-				}
+					Semantic.reportError(filename,expr.lineNo,"Expression " + expr.name + " doesn't conform to the declared type " + expr.typeid);
 				
+				}
 			}
+				
 			Visit(expr.body);
 			expr.type = expr.body.type;
 			scopeTable.exitScope();
@@ -480,6 +476,7 @@ public class Visitor
 		scopeTable.exitScope();		
 	}
 
+	//Initialize Base Class Expressions
 	public AST.expression BaseExprInit(String s, int l)
 	{
 		if("Int".equals(s))

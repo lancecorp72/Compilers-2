@@ -12,6 +12,7 @@ class Node
 	public int lineNo;
 	public HashMap<String,AST.attr> attributes;
 	public HashMap<String,AST.method> methods;
+	public HashMap<String,String> inheritedFeatures;
 
 	//Constructor
 	Node(String n, int i, String p, String f, int l, HashMap<String,AST.attr> as, HashMap<String,AST.method> ms)
@@ -25,6 +26,7 @@ class Node
 		attributes.putAll(as);
 		methods = new HashMap<String,AST.method>();
 		methods.putAll(ms);
+		inheritedFeatures = new HashMap<String,String>();
 	}
 }
 
@@ -36,7 +38,6 @@ public class Inheritance
 	private ArrayList<Node> graph;
 	private HashMap<String,Integer> classList;
 	private HashMap<String,String> mangledNames;
-	private HashMap<String,String> nameToMname;
 
 	//Constructor
 	public Inheritance()
@@ -44,7 +45,6 @@ public class Inheritance
 		graph = new ArrayList<Node>();
 		classList = new HashMap<String,Integer>();
 		mangledNames = new HashMap<String,String>();
-		nameToMname = new HashMap<String,String>();
 		GraphInitialize();
 	}
 
@@ -55,7 +55,7 @@ public class Inheritance
 		ROOT.methods.put("abort", new AST.method("abort",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
 		ROOT.methods.put("type_name", new AST.method("type_name",new ArrayList<AST.formal>(),"String",new AST.no_expr(0),0));
 		ROOT.methods.put("copy", new AST.method("copy",new ArrayList<AST.formal>(),"Object",new AST.no_expr(0),0));
-		ROOT.attributes.put("self", new AST.attr("self","SELF_TYPE",new AST.expression(),0));
+		ROOT.attributes.put("self", new AST.attr("self","SELF_TYPE",(AST.expression)new AST.no_expr(0),0));
 		graph.add(ROOT);
 		classList.put("Object",0);
 
@@ -108,14 +108,34 @@ public class Inheritance
 			return graph.get(classList.get(name)).filename;
 		return "";
 	}
-	public String GetMangledType(String name)
-	{
-		return mangledNames.get(nameToMname.get(name));
-	}
 
-	public String GetMangledName(String name)
+	public String GetMangledName(String className,AST.method md)
 	{
-		return nameToMname.get(name);
+		String temp = "";
+    	temp += "_CN";
+    	String funcName = md.name;
+    	temp += (Integer.toString(className.length()));
+    	temp += "_";
+    	temp += (className);
+    	temp += ("_FN");
+    	temp += (Integer.toString(funcName.length()));
+    	temp += (funcName);
+    	temp += ("_AL");
+    	temp += (Integer.toString(md.formals.size()));
+    	if(md.formals.size() == 0)
+    		temp += ("_NP_");
+    	else
+    	{
+    		for(int j = 0; j < md.formals.size(); j++)
+    		{
+    			temp += (Integer.toString(j));
+    			temp += ("N");
+    			temp += (Integer.toString(md.formals.get(j).typeid.length()));
+    			temp.concat(md.formals.get(j).typeid);
+    		}
+    	}
+
+    	return temp;
 	}
 	
 	//For checking Validity of Assign Operation
@@ -290,6 +310,7 @@ public class Inheritance
 		}
 	}
 	
+	//Managles Names of Methods
 	public void FuncMangledNames()
 	{
 		for(int i=0; i<graph.size(); i++)
@@ -297,36 +318,61 @@ public class Inheritance
 			Node graphNode = graph.get(i);
 			for (Map.Entry<String,AST.method> entry : graphNode.methods.entrySet())  
             {
-            	String temp = "";
-            	temp += "_CN";
-            	String funcName = entry.getValue().name;
-            	String className = graphNode.name;
-            	temp += (Integer.toString(className.length()));
-            	temp += "_";
-            	temp += (className);
-            	temp += ("_FN");
-            	temp += (Integer.toString(funcName.length()));
-            	temp += (funcName);
-            	temp += ("_AL");
-            	temp += (Integer.toString(entry.getValue().formals.size()));
-            	if(entry.getValue().formals.size() == 0)
-            		temp += ("_NP_");
-            	else
-            	{
-            		for(int j = 0; j < entry.getValue().formals.size(); j++)
-            		{
-            			temp += (Integer.toString(j));
-            			temp += ("N");
-            			temp += (Integer.toString(entry.getValue().formals.get(j).typeid.length()));
-            			temp.concat(entry.getValue().formals.get(j).typeid);
-            		}
-            	}
-            	entry.getValue().mname = temp;
-            	mangledNames.put(temp,entry.getValue().typeid);
-            	nameToMname.put(funcName,temp);
-            }
-            
+            	entry.getValue().mname = GetMangledName(graphNode.name,entry.getValue());
+            	mangledNames.put(entry.getValue().mname,entry.getValue().typeid);
+            }     
 		}
 	}
 
+	//Collect Attributes from Inherited Class
+	public void CheckInheritedFeatures()
+	{
+		boolean[] visited = new boolean[graph.size()];
+		visited[0] = true;
+		int count = graph.size()-1;
+
+		for(int i=1; i<graph.size(); i++)
+		{
+			if(visited[i]==false)
+				visited = CheckInheritedFeaturesHelper(i,visited);
+		}
+	}
+
+	//Helper Function to wait till Parent Class is visited before Accessing a Class
+	private boolean[] CheckInheritedFeaturesHelper(int classId, boolean[] visited)
+	{
+		Node curNode = graph.get(classId);
+		int parentId = GetParentIndex(curNode.name);
+
+		if(visited[parentId]==false)
+		{
+			visited = CheckInheritedFeaturesHelper(parentId,visited);
+		}
+
+		Node parNode = graph.get(GetParentIndex(curNode.name));
+		for(Map.Entry<String,AST.attr> entry: parNode.attributes.entrySet())
+		{
+			if(curNode.attributes.containsKey(entry.getKey()))
+			{
+				String s = parNode.inheritedFeatures.get(entry.getKey());
+				if(s==null)
+					s=parNode.name;
+				Semantic.reportError(curNode.filename,curNode.lineNo,"Redefinition of '"+entry.getKey()+"' Attribute inherited from Class '"+s+"'");
+			}
+			else
+			{
+				curNode.attributes.put(entry.getKey(),entry.getValue());
+				String s = parNode.inheritedFeatures.get(entry.getKey());
+				if(s==null)
+					curNode.inheritedFeatures.put(entry.getKey(),parNode.name);
+				else
+					curNode.inheritedFeatures.put(entry.getKey(),s);
+			}
+		}
+
+		graph.set(classId,curNode);
+		visited[classId] = true;
+
+		return visited;
+	}
 }
