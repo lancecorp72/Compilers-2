@@ -113,7 +113,7 @@ public class Inheritance
 		return mangledNames.get(nameToMname.get(name));
 	}
 	
-	
+	//For checking Validity of Assign Operation
 	public boolean isConforming(String type1, String type2)
 	{
 		//type1 <- type2
@@ -130,6 +130,7 @@ public class Inheritance
 		}
 		return false;
 	}
+
 	//Finds Least Common Ancestor of two given Classes
 	public String GetLCA(String cl1, String cl2)
 	{

@@ -42,6 +42,7 @@ public class Visitor
 	{
 		//New scope for each Class
 		scopeTable.enterScope();
+		filename = cl.filename;
 
 		//Insert all declared Class attributes into Scope Table
 		for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs(cl.name).entrySet())
@@ -52,10 +53,7 @@ public class Visitor
 
 		//Visit all the Class methods
 		for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
-		{
-			filename = cl.filename;
 			Visit(entry.getValue());
-		}
 
 		//Exit scope before leaving Class
 		scopeTable.exitScope();
@@ -65,7 +63,14 @@ public class Visitor
 	public void Visit(AST.attr at)
 	{
 		Visit(at.value);
-		//isConforming()
+		if(!"No_type".equals(at.value.type) && Semantic.inheritance.isConforming(at.typeid,at.value.type)==false)
+			Semantic.reportError(filename,at.lineNo,"Type: '"+at.value.type+"' in Assign statement cannot conform to type: '"+at.typeid+"' of Attribute '"+at.name+"'");
+		if("No_type".equals(at.value.type))
+		{
+			AST.expression e = BaseExprInit(at.typeid,at.lineNo);
+			if(e!=null)
+				at.value = e;
+		}
 	}
 
 	//Method Visitor
@@ -290,33 +295,20 @@ public class Visitor
 			lp.type = "Object";
 		}
 
-		//Let
-		else if(exp instanceof AST.let)
-		{
-			AST.let lt = (AST.let)exp;
-			Visit(lt.value);
-			Visit(lt.body);
-
-			scopeTable.enterScope();
-			lt.typeid = lt.body.type;
-			scopeTable.exitScope();
-		}
-	}
-	
-	public void Visit(AST.cond expr)
-	{
-		
-  	//if-else statements
+	  	//If Else
 		else if(exp instanceof AST.cond)
 		{
 			AST.cond expr = (AST.cond)exp;
 			Visit(expr.predicate);
 			Visit(expr.ifbody);
 			Visit(expr.elsebody);
+
 			if(!expr.predicate.type.equals("Bool"))
 				Semantic.reportError(filename, expr.lineNo,"If condition not of Bool type");
 			String type1 = expr.ifbody.type;
 			String type2 = expr.elsebody.type;
+
+			//Deciding type of Conditional Expression
 			if(type1.equals(type2))
 			{
 				expr.type = type1;
@@ -332,7 +324,7 @@ public class Visitor
 		
 		}
 		
-		//Assignment operation
+		//Assign
 		else if(exp instanceof AST.assign)
 		{
 			AST.assign expr = (AST.assign)exp;
@@ -353,13 +345,14 @@ public class Visitor
 			expr.type = expr.e1.type;
 		}
 		
-		//Dispatch
+		//Static Dispatch
 		else if(exp instanceof AST.static_dispatch)
 		{
 			AST.static_dispatch expr = (AST.static_dispatch)exp;
 			Visit(expr.caller);
 			for(AST.expression e : expr.actuals)
 				Visit(e);
+
 			if(Semantic.inheritance.GetClassIndex(expr.typeid) == null)
 			{
 				Semantic.reportError(filename,expr.lineNo, "Undefined type " + expr.typeid);
@@ -384,30 +377,16 @@ public class Visitor
 				expr.type = Semantic.inheritance.GetClassMethods(expr.caller.type).get(expr.name).typeid;	
 			}
 		}
-		
-		/*else if((exp instanceof AST.dispatch)
-		{
-			AST.dispatch expr = (AST.dispatch)exp;
-			Visit(expr.caller);	
-			for(AST.expression e : expr.actuals)
-				Visit(e);
-			
-			//String t = Semantic.inheritance.GetMangeledType(expr.name);
-			String temp = expr.caller.type;
-			while(t == null)
-			{
-				 t = Semantic.inheritance.GetClassMethods(temp).getValue(expr.name);
-				 temp = Semantic.inheritance.GetParentIndex(temp)
-			}
-			if(t == null)
-			{
-				Semantic.reportError(filename,expr.lineNo, "Method " + expr.name + " not found in class " + expr.caller.type);
-				expr.type = "Object";
-			
-			}
-			else
-				expr.type = t;
-		}*/
 	}
 
+	public AST.expression BaseExprInit(String s, int l)
+	{
+		if("Int".equals(s))
+			return new AST.int_const(0,l);
+		if("Bool".equals(s))
+			return new AST.bool_const(false,l);
+		if("String".equals(s))
+			return new AST.string_const("",l);
+		return null;
+	}
 }
