@@ -9,15 +9,8 @@ class A inherits B {
 	foo() : Int { 1 };
 };
 
-class B inherits A {
+class B {
 	i : Int;
+	foo(i : Int,i: Int) : Int { 2 };
 };
 
-class C inherits D {
-	i : Int;
-};
-
-class D inherits C {
-	i : Int;
-	foo() : Int { 1 };
-};
