@@ -12,7 +12,8 @@ class Node
 	public int lineNo;
 	public HashMap<String,AST.attr> attributes;
 	public HashMap<String,AST.method> methods;
-	public HashMap<String,String> inheritedFeatures;
+	public HashMap<String,String> inheritedAttributes;
+	public HashMap<String,AST.method> inheritedMethods;
 
 	//Constructor
 	Node(String n, int i, String p, String f, int l, HashMap<String,AST.attr> as, HashMap<String,AST.method> ms)
@@ -26,7 +27,8 @@ class Node
 		attributes.putAll(as);
 		methods = new HashMap<String,AST.method>();
 		methods.putAll(ms);
-		inheritedFeatures = new HashMap<String,String>();
+		inheritedAttributes = new HashMap<String,String>();
+		inheritedMethods = new HashMap<String,AST.method>();
 	}
 }
 
@@ -136,6 +138,11 @@ public class Inheritance
     	}
 
     	return temp;
+	}
+
+	public boolean CheckMangledName(String s)
+	{
+		return mangledNames.containsKey(s);
 	}
 	
 	//For checking Validity of Assign Operation
@@ -309,20 +316,6 @@ public class Inheritance
 			}
 		}
 	}
-	
-	//Managles Names of Methods
-	public void FuncMangledNames()
-	{
-		for(int i=0; i<graph.size(); i++)
-		{
-			Node graphNode = graph.get(i);
-			for (Map.Entry<String,AST.method> entry : graphNode.methods.entrySet())  
-            {
-            	entry.getValue().mname = GetMangledName(graphNode.name,entry.getValue());
-            	mangledNames.put(entry.getValue().mname,entry.getValue().typeid);
-            }     
-		}
-	}
 
 	//Collect Attributes from Inherited Class
 	public void CheckInheritedFeatures()
@@ -349,12 +342,13 @@ public class Inheritance
 			visited = CheckInheritedFeaturesHelper(parentId,visited);
 		}
 
+		//Inserting Inherited Attributes into 'inheritedAttributes'
 		Node parNode = graph.get(GetParentIndex(curNode.name));
 		for(Map.Entry<String,AST.attr> entry: parNode.attributes.entrySet())
 		{
 			if(curNode.attributes.containsKey(entry.getKey()))
 			{
-				String s = parNode.inheritedFeatures.get(entry.getKey());
+				String s = parNode.inheritedAttributes.get(entry.getKey());
 				if(s==null)
 					s=parNode.name;
 				Semantic.reportError(curNode.filename,curNode.lineNo,"Redefinition of '"+entry.getKey()+"' Attribute inherited from Class '"+s+"'");
@@ -362,11 +356,50 @@ public class Inheritance
 			else
 			{
 				curNode.attributes.put(entry.getKey(),entry.getValue());
-				String s = parNode.inheritedFeatures.get(entry.getKey());
+				String s = parNode.inheritedAttributes.get(entry.getKey());
 				if(s==null)
-					curNode.inheritedFeatures.put(entry.getKey(),parNode.name);
+					curNode.inheritedAttributes.put(entry.getKey(),parNode.name);
 				else
-					curNode.inheritedFeatures.put(entry.getKey(),s);
+					curNode.inheritedAttributes.put(entry.getKey(),s);
+			}
+		}
+
+		//Inserting Methods of current Class into Class-Global 'mangledNames'
+		for (Map.Entry<String,AST.method> entry : curNode.methods.entrySet())
+		{
+			String s = GetMangledName(curNode.name,entry.getValue());
+			mangledNames.put(s,entry.getValue().typeid);
+		}
+
+		for (Map.Entry<String,AST.method> entry : parNode.inheritedMethods.entrySet())
+		{
+			String s = GetMangledName(curNode.name,entry.getValue());
+			if(mangledNames.containsKey(s)==true)
+				if(mangledNames.get(s).equals(entry.getValue().typeid)==false)
+					Semantic.reportError(curNode.filename,entry.getValue().lineNo,"Redefintion of Method '"+entry.getKey()+"()' in Class '"+curNode.name+"' should have Return type: '"+entry.getValue().typeid+"' as defined in Class '"+entry.getKey()+"'");
+			else if(curNode.methods.containsKey(entry.getValue().name))
+				Semantic.reportError(curNode.filename,entry.getValue().lineNo,"Redefintion of Method '"+entry.getKey()+"()' in Class '"+curNode.name+"' should have same Arguments as in Class '"+entry.getKey()+"'");
+			else
+			{
+				mangledNames.put(s,entry.getValue().typeid);
+				curNode.inheritedMethods.put(entry.getKey(),entry.getValue());
+			}
+		}
+
+		for (Map.Entry<String,AST.method> entry : parNode.methods.entrySet())
+		{
+			String s = GetMangledName(curNode.name,entry.getValue());
+			if(mangledNames.containsKey(s)==true)
+				if(mangledNames.get(s).equals(entry.getValue().typeid)==false)
+					Semantic.reportError(curNode.filename,entry.getValue().lineNo,"Redefintion of Method '"+entry.getKey()+"()' in Class '"+curNode.name+"' should have Return type: '"+entry.getValue().typeid+"' as defined in Class '"+parNode.name+"'");
+				else
+					curNode.inheritedMethods.put(parNode.name,entry.getValue());
+			else if(curNode.methods.containsKey(entry.getValue().name)==true)
+				Semantic.reportError(curNode.filename,entry.getValue().lineNo,"Redefintion of Method '"+entry.getKey()+"()' in Class '"+curNode.name+"' should have same Arguments as in Class '"+parNode.name+"'");
+			else
+			{
+				mangledNames.put(s,entry.getValue().typeid);
+				curNode.inheritedMethods.put(parNode.name,entry.getValue());
 			}
 		}
 
