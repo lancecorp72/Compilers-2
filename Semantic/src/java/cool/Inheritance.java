@@ -85,6 +85,12 @@ public class Inheritance
 	}
 
 	//Returns index of corresponding Class
+	public Integer GetParentIndex(String name)
+	{
+		return classList.get(graph.get(classList.get(name)).parent);
+	}
+
+	//Returns index of corresponding Class
 	public Integer GetClassIndex(String name)
 	{
 		return classList.get(name);
@@ -94,6 +100,35 @@ public class Inheritance
 	public String GetClassFilename(String name)
 	{
 		return graph.get(classList.get(name)).filename;
+	}
+
+	//Finds Least Common Ancestor of two given Classes
+	public String GetLCA(String cl1, String cl2)
+	{
+		String itr = cl1;
+		ArrayList<String> anc = new ArrayList<>();
+
+		//Add Inheritance path of 'cl1' to 'anc'
+		while(GetClassIndex(itr)!= 0)
+		{
+			anc.add(itr);
+			itr = graph.get(GetParentIndex(itr)).name;
+		}
+
+		itr = cl2;
+
+		//Iterate till a Common Ancestor Class is found
+		while(GetClassIndex(itr)!=0)
+		{
+			if(anc.contains(itr))
+				break;
+			itr = graph.get(GetParentIndex(itr)).name;
+		}
+
+		if(GetClassIndex(itr)==0)
+			return "Object";
+
+		return itr;
 	}
 
 	//Returns Attribute Hashmap of corresponding Class
