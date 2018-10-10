@@ -11,6 +11,6 @@ class A inherits B {
 
 class B {
 	i : Int;
-	foo(i : Int) : Int { 2 };
+	foo(i : Int) : Int { let i : Int <-1 in i };
 };
 

@@ -22,14 +22,17 @@ public class Visitor
 			Semantic.inheritance.InsertClass(newClass);
 		}
 
+		//Checks Validity of Classes
 		Semantic.inheritance.CheckClass();
 		if(Semantic.GetErrorFlagInProgram())
 			return;
+		//Checks for Cycles in Graph
 		Semantic.inheritance.CheckCycle();
 		if(Semantic.GetErrorFlagInProgram())
 			return;
 		Semantic.inheritance.FuncMangledNames();
 
+		//Visit all Nodes of AST
 		for(AST.class_ newClass: program.classes)
 			Visit(newClass);
 	}
@@ -42,7 +45,10 @@ public class Visitor
 
 		//Insert all declared Class attributes into Scope Table
 		for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs(cl.name).entrySet())
+		{
+			Visit(entry.getValue());
 			scopeTable.insert(entry.getKey(),entry.getValue().typeid);
+		}
 
 		//Visit all the Class methods
 		for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
@@ -53,6 +59,13 @@ public class Visitor
 
 		//Exit scope before leaving Class
 		scopeTable.exitScope();
+	}
+
+	//Attribute Visitor
+	public void Visit(AST.attr at)
+	{
+		Visit(at.value);
+		//isConforming()
 	}
 
 	//Method Visitor
@@ -113,6 +126,8 @@ public class Visitor
 		else if(exp instanceof AST.comp)
 		{
 			AST.comp expr = (AST.comp)exp;
+			Visit(expr.e1);
+			
 			if(!"Bool".equals(expr.e1.type))
 			{
 				Semantic.reportError(filename,expr.lineNo,"Expression for 'not' is not of Bool type");	
@@ -124,9 +139,12 @@ public class Visitor
 		else if(exp instanceof AST.eq)
 		{
 			AST.eq expr = (AST.eq)exp;
+			Visit(expr.e1);
+			Visit(expr.e2);
+
 			if(!expr.e1.type.equals(expr.e2.type))
 			{
-				Semantic.reportError(filename,expr.lineNo,"Type Mismatch of Operands in '=' Expression");
+				Semantic.reportError(filename,expr.lineNo,"Type Mismatch of Operands in '=' Expression : "+expr.e1.type+", "+expr.e2.type);
 			}
 			else
 			{
@@ -139,6 +157,9 @@ public class Visitor
 		else if(exp instanceof AST.leq)
 		{
 			AST.leq expr = (AST.leq)exp;
+			Visit(expr.e1);
+			Visit(expr.e2);
+
 			if(!expr.e1.type.equals("Int"))
 				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Expression for '<=' is not of Int type");
 			if(!expr.e2.type.equals("Int"))
@@ -150,6 +171,9 @@ public class Visitor
 		else if(exp instanceof AST.lt)
 		{
 			AST.lt expr = (AST.lt)exp;
+			Visit(expr.e1);
+			Visit(expr.e2);
+
 			if(!expr.e1.type.equals("Int"))
 				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Expression for '<' is not of Int type");
 			if(!expr.e2.type.equals("Int"))
@@ -161,6 +185,8 @@ public class Visitor
 		else if(exp instanceof AST.neg)
 		{
 			AST.neg expr = (AST.neg)exp;
+			Visit(expr.e1);
+
 			if(!expr.e1.type.equals("Int"))
 				Semantic.reportError(filename,expr.lineNo,"Expression for 'not' is not of Int type");
 			expr.type = "Int";
@@ -170,6 +196,9 @@ public class Visitor
 		else if(exp instanceof AST.divide) 
 		{
 			AST.divide expr = (AST.divide)exp;
+			Visit(expr.e1);
+			Visit(expr.e2);
+
 	        if(!expr.e1.type.equals("Int"))
 				Semantic.reportError(filename,expr.e1.lineNo,"Dividend is not of Int type");
 			if(!expr.e2.type.equals("Int"))
@@ -181,6 +210,9 @@ public class Visitor
 		else if(exp instanceof AST.mul) 
 		{
 			AST.mul expr = (AST.mul)exp;
+			Visit(expr.e1);
+			Visit(expr.e2);
+
 	        if(!expr.e1.type.equals("Int"))
 				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Multiplicand is not of Int type");
 			if(!expr.e2.type.equals("Int"))
@@ -192,6 +224,9 @@ public class Visitor
 		else if(exp instanceof AST.sub) 
 		{
 			AST.sub expr = (AST.sub)exp;
+			Visit(expr.e1);
+			Visit(expr.e2);
+
 	        if(!expr.e1.type.equals("Int"))
 				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Operand for '-' is not of Int type");
 			if(!expr.e2.type.equals("Int"))
@@ -203,6 +238,9 @@ public class Visitor
 		else if(exp instanceof AST.plus) 
 		{
 			AST.plus expr = (AST.plus)exp;
+			Visit(expr.e1);
+			Visit(expr.e2);
+
 	        if(!expr.e1.type.equals("Int"))
 				Semantic.reportError(filename,expr.e1.lineNo,"Left-hand Operand for '+' is not of Int type");
 			if(!expr.e2.type.equals("Int"))
@@ -234,6 +272,9 @@ public class Visitor
 		else if(exp instanceof AST.block)
 		{
 			AST.block bl = (AST.block)exp;
+			for(AST.expression e: bl.l1)
+				Visit(e);
+
 			bl.type = bl.l1.get(bl.l1.size()-1).type;
 		}
 		
@@ -241,9 +282,24 @@ public class Visitor
 		else if(exp instanceof AST.loop)
 		{
 			AST.loop lp = (AST.loop)exp;
+			Visit(lp.predicate);
+
 			if(!lp.predicate.type.equals("Bool"))
 				Semantic.reportError(filename,lp.lineNo,"Loop condition not of Bool type");
+			Visit(lp.body);
 			lp.type = "Object";
+		}
+
+		//Let
+		else if(exp instanceof AST.let)
+		{
+			AST.let lt = (AST.let)exp;
+			Visit(lt.value);
+			Visit(lt.body);
+
+			scopeTable.enterScope();
+			lt.typeid = lt.body.type;
+			scopeTable.exitScope();
 		}
 	}
 	
