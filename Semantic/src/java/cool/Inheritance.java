@@ -36,6 +36,7 @@ public class Inheritance
 	private ArrayList<Node> graph;
 	private HashMap<String,Integer> classList;
 	private HashMap<String,String> mangledNames;
+	private HashMap<String,String> nameToMname;
 
 	//Constructor
 	public Inheritance()
@@ -43,6 +44,7 @@ public class Inheritance
 		graph = new ArrayList<Node>();
 		classList = new HashMap<String,Integer>();
 		mangledNames = new HashMap<String,String>();
+		nameToMname = new HashMap<String,String>();
 		GraphInitialize();
 	}
 
@@ -106,7 +108,28 @@ public class Inheritance
 			return graph.get(classList.get(name)).filename;
 		return "";
 	}
-
+	public String GetMangledType(String name)
+	{
+		return mangledNames.get(nameToMname.get(name));
+	}
+	
+	
+	public boolean isConforming(String type1, String type2)
+	{
+		//type1 <- type2
+		if(type1.equals(type2)||"Object".equals(type1))
+			return true;
+		else if(type1.equals("Bool")||type1.equals("Int")||type1.equals("String")||type2.equals("Bool")||type2.equals("Int")||type2.equals("String"))
+			return false;
+		String itr = type2;
+		while(GetClassIndex(itr)!=0)
+		{
+			if(itr.equals(type1))
+				return true;
+			itr = graph.get(GetParentIndex(itr)).name;
+		}
+		return false;
+	}
 	//Finds Least Common Ancestor of two given Classes
 	public String GetLCA(String cl1, String cl2)
 	{
@@ -293,6 +316,7 @@ public class Inheritance
             	}
             	entry.getValue().mname = temp;
             	mangledNames.put(temp,entry.getValue().typeid);
+            	nameToMname.put(funcName,temp);
             }
             
 		}

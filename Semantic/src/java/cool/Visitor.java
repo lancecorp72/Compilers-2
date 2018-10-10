@@ -11,7 +11,7 @@ public class Visitor
 	public Visitor()
 	{
 		scopeTable = new ScopeTable<String>();
-    filename = "";
+    	filename = "";
 	}
 
 	//Program Visitor
@@ -303,15 +303,111 @@ public class Visitor
 		}
 	}
 	
-
-	public void Visit(AST.assign expr)
-	{
-		//update scope table
-	}
-	
 	public void Visit(AST.cond expr)
 	{
-
+		
+  	//if-else statements
+		else if(exp instanceof AST.cond)
+		{
+			AST.cond expr = (AST.cond)exp;
+			Visit(expr.predicate);
+			Visit(expr.ifbody);
+			Visit(expr.elsebody);
+			if(!expr.predicate.type.equals("Bool"))
+				Semantic.reportError(filename, expr.lineNo,"If condition not of Bool type");
+			String type1 = expr.ifbody.type;
+			String type2 = expr.elsebody.type;
+			if(type1.equals(type2))
+			{
+				expr.type = type1;
+			} 
+			else if(type1.equals("Bool")||type1.equals("Int")||type1.equals("String")||type2.equals("Bool")||type2.equals("Int")||type2.equals("String"))
+			{
+				expr.type = "Object";
+			}
+			else
+			{
+				expr.type = (Semantic.inheritance.GetLCA(type1,type2));
+			}
+		
+		}
+		
+		//Assignment operation
+		else if(exp instanceof AST.assign)
+		{
+			AST.assign expr = (AST.assign)exp;
+			Visit(expr.e1);
+			if("self".equals(expr.name))
+				Semantic.reportError(filename,expr.lineNo,"Asignment to self not possible");
+			else
+			{
+				String type = scopeTable.lookUpGlobal(expr.name);
+				if(type == null)
+					Semantic.reportError(filename,expr.lineNo,expr.name+"undefined");
+				else if(!Semantic.inheritance.isConforming(type,expr.e1.type))
+				{
+					Semantic.reportError(filename,expr.lineNo,"Can't assign to non-conforming types");
+				}
+				
+			}
+			expr.type = expr.e1.type;
+		}
+		
+		//Dispatch
+		else if(exp instanceof AST.static_dispatch)
+		{
+			AST.static_dispatch expr = (AST.static_dispatch)exp;
+			Visit(expr.caller);
+			for(AST.expression e : expr.actuals)
+				Visit(e);
+			if(Semantic.inheritance.GetClassIndex(expr.typeid) == null)
+			{
+				Semantic.reportError(filename,expr.lineNo, "Undefined type " + expr.typeid);
+				expr.typeid = "Object";
+				expr.type = "Object";
+			}
+			else if(!Semantic.inheritance.isConforming(expr.typeid,expr.caller.type))
+			{
+				Semantic.reportError(filename,expr.lineNo,"Type of calller (" + expr.typeid + ") does not conform to the type in static dispatch (" + expr.name + ")");
+				expr.type = "Object";
+			
+			}
+			
+			boolean t = Semantic.inheritance.GetClassMethods(expr.caller.type).containsKey(expr.name);
+			if(t == false)
+			{
+				Semantic.reportError(filename,expr.lineNo,"Undefined method in class " + expr.typeid);
+				expr.type = "Object";
+			}
+			else
+			{
+				expr.type = Semantic.inheritance.GetClassMethods(expr.caller.type).get(expr.name).typeid;	
+			}
+		}
+		
+		/*else if((exp instanceof AST.dispatch)
+		{
+			AST.dispatch expr = (AST.dispatch)exp;
+			Visit(expr.caller);	
+			for(AST.expression e : expr.actuals)
+				Visit(e);
+			
+			//String t = Semantic.inheritance.GetMangeledType(expr.name);
+			String temp = expr.caller.type;
+			while(t == null)
+			{
+				 t = Semantic.inheritance.GetClassMethods(temp).getValue(expr.name);
+				 temp = Semantic.inheritance.GetParentIndex(temp)
+			}
+			if(t == null)
+			{
+				Semantic.reportError(filename,expr.lineNo, "Method " + expr.name + " not found in class " + expr.caller.type);
+				expr.type = "Object";
+			
+			}
+			else
+				expr.type = t;
+		}*/
 	}
 
 }
