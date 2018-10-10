@@ -415,7 +415,7 @@ public class Visitor
 			AST.let expr = (AST.let)exp;
 			scopeTable.enterScope();
 
-			if(Semantic.inheritance.GetClassIndex(expr.type) == null)
+			if(Semantic.inheritance.GetClassIndex(expr.typeid) == null)
 			{
 				Semantic.reportError(filename,expr.lineNo,"Undefined type " + expr.typeid);
 				expr.type = "Object";
@@ -439,7 +439,38 @@ public class Visitor
   		//Case
   		else if (exp instanceof AST.typcase)
 		{
-
+			AST.typcase expr = (AST.typcase) exp;
+			Visit(expr.predicate);
+			Visit(expr.branches.get(0));
+			expr.type = expr.branches.get(0).value.type;
+			 for(int i=1; i<expr.branches.size(); i++) 
+			 {
+            	Visit(expr.branches.get(i));
+           	 	String type1 = expr.type;
+           	 	String type2 = expr.branches.get(i).value.type;
+           	 	if(type1.equals(type2))
+           	 		expr.type = type1;
+           	 	else if (type1.equals("Bool")||type1.equals("Int")||type1.equals("String")||type2.equals("Bool")||type2.equals("Int")||type2.equals("String"))
+           	 		expr.type = "Object";
+           	 	else
+           	 	{
+           	 		expr.type = Semantic.inheritance.GetLCA(type1,type2);
+           	 	}
+        	}
+		}
+		
+		else if(exp instanceof AST.object)
+		{
+			AST.object expr = (AST.object)exp;
+			String t = scopeTable.lookUpGlobal(expr.name);
+			if(t == null)
+			{
+				expr.type ="Object";
+				Semantic.reportError(filename,expr.lineNo,"Attribute " + expr.name + " is not defined");
+			}
+			else
+				expr.type = t;
+			
 		}
 	}
 
