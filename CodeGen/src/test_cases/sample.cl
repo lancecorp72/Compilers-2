@@ -6,7 +6,6 @@ class Main {
 		{
 			a.fo();
 			b.foo(1);
-			c <- b;
 			1;
 		}
 	};
