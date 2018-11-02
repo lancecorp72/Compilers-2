@@ -40,7 +40,7 @@ public class PrintNode
 
                     Codegen.progOut += "@"+entry.getValue().name+" = global ";
                     Visit(entry.getValue());
-                    Codegen.progOut += ";\n";
+                    Codegen.progOut += "\n";
                 }
 
                 for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
@@ -65,7 +65,7 @@ public class PrintNode
             Codegen.progOut += ",";
         }
         Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-1);
-        Codegen.progOut += " };\n";
+        Codegen.progOut += " }\n";
 
 		for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
 			Visit(entry.getValue());
@@ -79,6 +79,6 @@ public class PrintNode
 	public void Visit(AST.method md)
     {
         Codegen.progOut += "define "+getType(md.typeid)+" @"+md.name+" (";
-        Codegen.progOut += ");\n";
+        Codegen.progOut += ")\n";
     }
 }
