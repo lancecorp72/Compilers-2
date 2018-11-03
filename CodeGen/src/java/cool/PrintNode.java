@@ -6,11 +6,13 @@ public class PrintNode
 {
     private HashMap<String,String> clNames;
     private String className;
+    private String indent;
 
 	//Constructor
 	public PrintNode()
 	{
         className = "";
+        indent = "  ";
         clNames = new HashMap<String,String>();
 	}
 
@@ -102,6 +104,10 @@ public class PrintNode
 
     public void Visit(AST.expression expr,ScopeTable<Integer> varNames)
     {
-    
-    }
+        if(expr instanceof AST.bool_const)
+        {
+            varNames.put(varCnt,"%" + varCnt);
+            Codegen.progOut = indent + varNames.get(varCnt) + " = alloca " + clNames.get("Bool") + "\n";
+            Codegen.progOut = indent +  "store" + clNames.get("Bool") + 
+        }
 }
