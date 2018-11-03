@@ -7,11 +7,15 @@ public class PrintNode
     private HashMap<String,String> clNames;
     private String className;
     private String indent;
+    private String val;
+    private int varCnt;
 
 	//Constructor
 	public PrintNode()
 	{
         className = "";
+        varCnt = 0;
+        val = "";
         indent = "  ";
         clNames = new HashMap<String,String>();
 	}
@@ -102,12 +106,76 @@ public class PrintNode
         Codegen.progOut += "}\n";
     }
 
-    public void Visit(AST.expression expr,ScopeTable<Integer> varNames)
+    public void Visit(AST.expression expr, ScopeTable<String> varNames)
     {
         if(expr instanceof AST.bool_const)
         {
-            varNames.put(varCnt,"%" + varCnt);
-            Codegen.progOut = indent + varNames.get(varCnt) + " = alloca " + clNames.get("Bool") + "\n";
-            Codegen.progOut = indent +  "store" + clNames.get("Bool") + 
+            int value = 0;
+            if(((AST.bool_const)expr).value)
+                value = 1;
+            varCnt += 1;
+            val = "" + varCnt;
+            Codegen.progOut += indent + "store " + clNames.get(expr.type) + " " + value + "," + clNames.get(expr.type) + "* " + val + "\n";
         }
+        if(expr instanceof AST.int_const)
+        {
+            int value = ((AST.int_const)expr).value;
+            varCnt += 1;
+            val = "" + varCnt;
+            Codegen.progOut += indent + "store " + clNames.get(expr.type) + " " + value + "," + clNames.get(expr.type) + "* " + val + "\n";
+        }
+        if(expr instanceof AST.object)
+        {
+            if(expr.type.equals("Int") || expr.type.equals("Bool"))
+                val = "%" + ((AST.object)expr).name;
+        }
+        if(expr instanceof AST.assign)
+        {
+            String vname = "%" + ((AST.assign)expr).name;
+            Visit(((AST.assign)expr).e1,varNames);
+
+            //assuming attributes are handled beforehand i.e allocated before
+            Codegen.progOut += indent + "store " + clNames.get(((AST.assign)expr).e1.type) + val + ", " + clNames.get(((AST.assign)expr).e1.type) + "* " + vname + "\n";
+        }
+        if(expr instanceof AST.plus)
+        {
+            varCnt += 1;
+            val  = "%add" + varCnt;
+            Codegen.progOut += val + " = add nsw" +  clNames.get(expr.type);
+            Visit(((AST.plus)expr).e1,varNames);
+            Codegen.progOut += val;
+            Visit(((AST.plus)expr).e2,varNames);
+            Codegen.progOut += val;
+        }
+        if(expr instanceof AST.mul)
+        {
+            varCnt += 1;
+            val  = "%mul" + varCnt;
+            Codegen.progOut += val + " = mul nsw" +  clNames.get(expr.type);
+            Visit(((AST.mul)expr).e1,varNames);
+            Codegen.progOut += val;
+            Visit(((AST.mul)expr).e2,varNames);
+            Codegen.progOut += val;
+        }
+        if(expr instanceof AST.sub)
+        {
+            varCnt += 1;
+            val  = "%sub" + varCnt;
+            Codegen.progOut += val + " = sub nsw" +  clNames.get(expr.type);
+            Visit(((AST.sub)expr).e1,varNames);
+            Codegen.progOut += val;
+            Visit(((AST.sub)expr).e2,varNames);
+            Codegen.progOut += val;
+        }
+        if(expr instanceof AST.divide)
+        {
+            varCnt += 1;
+            val  = "%divide" + varCnt;
+            Codegen.progOut += val + " = sub nsw" +  clNames.get(expr.type);
+            Visit(((AST.divide)expr).e1,varNames);
+            Codegen.progOut += val;
+            Visit(((AST.divide)expr).e2,varNames);
+            Codegen.progOut += val;
+        }
+    } 
 }
