@@ -5,15 +5,18 @@ import java.util.*;
 public class PrintNode
 {
     private int varCnt;
-    private HashMap<String,String> varNames,clNames;
+    private HashMap<String,String> clNames;
+    private HashMap <int, String> varNames;
     private String className;
+    private String indent;
 
 	//Constructor
 	public PrintNode()
 	{
         varCnt = 0;
         className = "";
-        varNames = new HashMap<String,String>();
+        indent = "  ";
+        varNames = new HashMap<int,String>();
         clNames = new HashMap<String,String>();
 	}
 
@@ -83,5 +86,14 @@ public class PrintNode
         Codegen.progOut += "define "+clNames.get(md.typeid)+" @"+Semantic.inheritance.GetMangledName(className,md)+" (";
         Codegen.progOut += ") {\n";
         Codegen.progOut += "}\n";
+    }
+    public void Visit(AST.expression expr)
+    {
+        if(expr instanceof AST.bool_const)
+        {
+            varNames.put(varCnt,"%" + varCnt);
+            Codegen.progOut = indent + varNames.get(varCnt) + " = alloca " + clNames.get("Bool") + "\n";
+            Codegen.progOut = indent +  "store" + clNames.get("Bool") + 
+        }
     }
 }
