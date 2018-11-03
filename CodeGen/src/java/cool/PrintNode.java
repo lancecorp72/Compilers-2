@@ -7,18 +7,23 @@ public class PrintNode
     private HashMap<String,String> clNames;
     private String className;
     private String indent;
-    private String val;
-    private int varCnt;
+    private Integer varCnt;
 
 	//Constructor
 	public PrintNode()
 	{
         className = "";
-        varCnt = 0;
-        val = "";
         indent = "  ";
+        varCnt = 0;
         clNames = new HashMap<String,String>();
 	}
+
+    Boolean isFstDgt(String s)
+    {
+        if(s.charAt(0)>='0' && s.charAt(0)<='9')
+            return true;
+        return false;
+    }
 
 	//Program Visitor
 	public void Visit(AST.program program)
@@ -56,14 +61,13 @@ public class PrintNode
         }
         Codegen.progOut += "\n";
 
-        ScopeTable<Integer> varNames = new ScopeTable<Integer>();
+        ScopeTable<String> varNames = new ScopeTable<String>();
         for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs("Main").entrySet())
         {
             if(entry.getValue().name.equals("self"))
                 continue;
 
-            int cnt = varNames.getSize();
-            varNames.insert(entry.getValue().name,cnt);
+            varNames.insert(entry.getValue().name,"@"+entry.getValue().name);
             Codegen.progOut += "@"+entry.getValue().name+" = global "+clNames.get(entry.getValue().typeid)+" 0\n";
         }
         Codegen.progOut += "\n";
@@ -76,8 +80,12 @@ public class PrintNode
             Visit(entry.getValue());
         }
 
-        Codegen.progOut += "define "+clNames.get(mainClassMethods.get("main").typeid)+" @main () {\n";
-        Visit(mainClassMethods.get("main").body,varNames);
+        AST.method md = mainClassMethods.get("main");
+        Codegen.progOut += "define "+clNames.get(md.typeid)+" @main () {\n";
+        varCnt = 0;
+        Visit(md.body,varNames);
+
+        Codegen.progOut += indent + "ret " + clNames.get(md.typeid) + " " + md.body.type + "\n";
         Codegen.progOut += "}";
     }
 
@@ -90,92 +98,78 @@ public class PrintNode
     public void Visit(AST.method md)
     {
         Codegen.progOut += "define "+clNames.get(md.typeid)+" @"+Semantic.inheritance.GetMangledName(className,md)+" (";
+        Integer idx = 1;
 
-        ScopeTable<Integer> varNames = new ScopeTable<Integer>();
+        ScopeTable<String> varNames = new ScopeTable<String>();
 		for(AST.formal fl: md.formals)
         {
-            int cnt = varNames.getSize();
-            varNames.insert(fl.name,cnt);
-            Codegen.progOut += clNames.get(fl.typeid)+" %"+Integer.toString(cnt)+", ";
+            String varId = "%a"+Integer.toString(idx++);
+            varNames.insert(fl.name,varId);
+            Codegen.progOut += clNames.get(fl.typeid)+" "+varId+", ";
         }
         if(!md.formals.isEmpty())
             Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-2);
 
         Codegen.progOut += ") {\n";
+
+        varCnt = 0;
         Visit(md.body,varNames);
+
+        Codegen.progOut += indent + "ret " + clNames.get(md.typeid) + " " + md.body.type + "\n";
         Codegen.progOut += "}\n";
     }
 
     public void Visit(AST.expression expr, ScopeTable<String> varNames)
     {
-        if(expr instanceof AST.bool_const)
-        {
-            int value = 0;
-            if(((AST.bool_const)expr).value)
-                value = 1;
-            varCnt += 1;
-            val = "" + varCnt;
-            Codegen.progOut += indent + "store " + clNames.get(expr.type) + " " + value + "," + clNames.get(expr.type) + "* " + val + "\n";
-        }
         if(expr instanceof AST.int_const)
         {
-            int value = ((AST.int_const)expr).value;
-            varCnt += 1;
-            val = "" + varCnt;
-            Codegen.progOut += indent + "store " + clNames.get(expr.type) + " " + value + "," + clNames.get(expr.type) + "* " + val + "\n";
+            AST.int_const ic = (AST.int_const)expr;
+            ic.type = Integer.toString(ic.value);
         }
-        if(expr instanceof AST.object)
-        {
-            if(expr.type.equals("Int") || expr.type.equals("Bool"))
-                val = "%" + ((AST.object)expr).name;
-        }
-        if(expr instanceof AST.assign)
-        {
-            String vname = "%" + ((AST.assign)expr).name;
-            Visit(((AST.assign)expr).e1,varNames);
 
-            //assuming attributes are handled beforehand i.e allocated before
-            Codegen.progOut += indent + "store " + clNames.get(((AST.assign)expr).e1.type) + val + ", " + clNames.get(((AST.assign)expr).e1.type) + "* " + vname + "\n";
-        }
-        if(expr instanceof AST.plus)
+        else if(expr instanceof AST.object)
         {
-            varCnt += 1;
-            val  = "%add" + varCnt;
-            Codegen.progOut += val + " = add nsw" +  clNames.get(expr.type);
-            Visit(((AST.plus)expr).e1,varNames);
-            Codegen.progOut += val;
-            Visit(((AST.plus)expr).e2,varNames);
-            Codegen.progOut += val;
+            AST.object obj = (AST.object)expr;
+            obj.type = varNames.lookUpGlobal(obj.name);
         }
-        if(expr instanceof AST.mul)
+
+        else if(expr instanceof AST.assign)
         {
-            varCnt += 1;
-            val  = "%mul" + varCnt;
-            Codegen.progOut += val + " = mul nsw" +  clNames.get(expr.type);
-            Visit(((AST.mul)expr).e1,varNames);
-            Codegen.progOut += val;
-            Visit(((AST.mul)expr).e2,varNames);
-            Codegen.progOut += val;
+            AST.assign asgn = (AST.assign)expr;
+            Visit(asgn.e1,varNames);
+            String vname = varNames.lookUpGlobal(asgn.name);
+
+            Codegen.progOut += indent + "store " + clNames.get(asgn.type) + " " + asgn.e1.type + ", " + clNames.get(asgn.type) + "* " + vname + "\n";
         }
-        if(expr instanceof AST.sub)
+
+        else if(expr instanceof AST.plus)
         {
-            varCnt += 1;
-            val  = "%sub" + varCnt;
-            Codegen.progOut += val + " = sub nsw" +  clNames.get(expr.type);
-            Visit(((AST.sub)expr).e1,varNames);
-            Codegen.progOut += val;
-            Visit(((AST.sub)expr).e2,varNames);
-            Codegen.progOut += val;
+            AST.plus pl = (AST.plus)expr;
+            Visit(pl.e1,varNames);
+            Visit(pl.e2,varNames);
+
+            if(isFstDgt(pl.e1.type) && isFstDgt(pl.e2.type))
+            {
+                pl.type = Integer.toString(Integer.valueOf(pl.e1.type) + Integer.valueOf(pl.e2.type));
+                return;
+            }
+            
+            varCnt++;
+            pl.type = "%v" + Integer.toString(varCnt);
+            Codegen.progOut += indent + pl.type + " = add " +  clNames.get(expr.type);
+            Codegen.progOut += " " + pl.e1.type + ", " + pl.e2.type + "\n";
         }
-        if(expr instanceof AST.divide)
+
+        else if(expr instanceof AST.block)
         {
-            varCnt += 1;
-            val  = "%divide" + varCnt;
-            Codegen.progOut += val + " = sub nsw" +  clNames.get(expr.type);
-            Visit(((AST.divide)expr).e1,varNames);
-            Codegen.progOut += val;
-            Visit(((AST.divide)expr).e2,varNames);
-            Codegen.progOut += val;
+            AST.block bk = (AST.block)expr;
+
+            int idx = 0;
+            for(; idx<bk.l1.size()-1; idx++)
+                Visit(bk.l1.get(idx),varNames);
+            Visit(bk.l1.get(idx),varNames);
+
+            bk.type = bk.l1.get(idx).type;
         }
     } 
 }

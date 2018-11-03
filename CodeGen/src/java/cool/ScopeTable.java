@@ -3,15 +3,23 @@ import java.util.*;
 public class ScopeTable<T> {
 	private int scope;
 	private int size;
+	private String lastVar;
 	private ArrayList<HashMap<String, T>> maps=new ArrayList<HashMap<String, T>>();
 	public ScopeTable(){
 		scope = 0;
 		size = 1;
+		lastVar = "";
 		maps.add(new HashMap<String, T>());
 	}
 	void insert(String s, T t){
 		maps.get(scope).put(s,t);
-		size++;
+		if(t instanceof String)
+		{
+			String ts = (String) t;
+			if(ts.charAt(0)=='%' && ts.charAt(1)=='v')
+				size++;
+		}
+		lastVar = s;
 	}
 	void enterScope(){
 		scope++;
@@ -35,5 +43,8 @@ public class ScopeTable<T> {
 	}
 	int getSize(){
 		return size;
+	}
+	String getLastVar(){
+		return lastVar;
 	}
 }
