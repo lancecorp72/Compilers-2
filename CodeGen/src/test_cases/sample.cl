@@ -1,12 +1,8 @@
 class Main {
 	i : Int;
-	a : A;
-	b : B;
-	c : C;
+
 	main() : Int {
 		{
-			a.fo();
-			b.foo(1);
 			1;
 		}
 	};
@@ -16,15 +12,15 @@ class Main {
 class A {
 	j : Int;
 	foo(i : Int) : Int { 2 };
-	fo() : String { "s" };
+	fo(h : Int,i : Int) : Int { 2 };
 };
 
 class B inherits A {
 	foo(i : Int) : Int { 1 };
-	fo() : String { "t" };
+
 };
 
 class C inherits A {
 	foo(i : Int) : Int { 1 };
-	fo() : String { "t" };
+
 };

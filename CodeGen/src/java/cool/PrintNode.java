@@ -4,16 +4,13 @@ import java.util.*;
 
 public class PrintNode
 {
-    private int varCnt;
-    private HashMap<String,String> varNames,clNames;
+    private HashMap<String,String> clNames;
     private String className;
 
 	//Constructor
 	public PrintNode()
 	{
-        varCnt = 0;
         className = "";
-        varNames = new HashMap<String,String>();
         clNames = new HashMap<String,String>();
 	}
 
@@ -35,7 +32,6 @@ public class PrintNode
                 {
                     if(entry.getValue().name.equals("self"))
                         continue;
-
                     Codegen.progOut += " "+clNames.get(entry.getValue().typeid)+",";
                 }
                 Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-1);
@@ -54,22 +50,29 @@ public class PrintNode
         }
         Codegen.progOut += "\n";
 
+        ScopeTable<Integer> varNames = new ScopeTable<Integer>();
         for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs("Main").entrySet())
         {
             if(entry.getValue().name.equals("self"))
                 continue;
-            Codegen.progOut += "@"+entry.getValue().name+" = global "+clNames.get(entry.getValue().typeid)+"\n";
+
+            int cnt = varNames.getSize();
+            varNames.insert(entry.getValue().name,cnt);
+            Codegen.progOut += "@"+entry.getValue().name+" = global "+clNames.get(entry.getValue().typeid)+" 0\n";
         }
         Codegen.progOut += "\n";
 
-		for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods("Main").entrySet())
+        HashMap<String,AST.method> mainClassMethods = Semantic.inheritance.GetClassMethods("Main");
+		for(Map.Entry<String,AST.method> entry: mainClassMethods.entrySet())
         {
             if(entry.getValue().name.equals("main"))
                 continue;
             Visit(entry.getValue());
         }
 
-        Codegen.progOut += "define "+clNames.get(Semantic.inheritance.GetClassMethods("Main").get("main").typeid)+" @main () {\n}";
+        Codegen.progOut += "define "+clNames.get(mainClassMethods.get("main").typeid)+" @main () {\n";
+        Visit(mainClassMethods.get("main").body,varNames);
+        Codegen.progOut += "}";
     }
 
 	public void Visit(AST.class_ cl)
@@ -81,7 +84,24 @@ public class PrintNode
     public void Visit(AST.method md)
     {
         Codegen.progOut += "define "+clNames.get(md.typeid)+" @"+Semantic.inheritance.GetMangledName(className,md)+" (";
+
+        ScopeTable<Integer> varNames = new ScopeTable<Integer>();
+		for(AST.formal fl: md.formals)
+        {
+            int cnt = varNames.getSize();
+            varNames.insert(fl.name,cnt);
+            Codegen.progOut += clNames.get(fl.typeid)+" %"+Integer.toString(cnt)+", ";
+        }
+        if(!md.formals.isEmpty())
+            Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-2);
+
         Codegen.progOut += ") {\n";
+        Visit(md.body,varNames);
         Codegen.progOut += "}\n";
+    }
+
+    public void Visit(AST.expression expr,ScopeTable<Integer> varNames)
+    {
+    
     }
 }
