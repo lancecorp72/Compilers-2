@@ -5,6 +5,7 @@ import java.util.*;
 public class PrintNode
 {
     private HashMap<String,String> clNames;
+    private ArrayList<String> baseFns;
     private String className;
     private String indent;
     private Integer varCnt;
@@ -18,9 +19,10 @@ public class PrintNode
         varCnt = 0;
         labCnt = 1;
         clNames = new HashMap<String,String>();
+        baseFns = new ArrayList<String>();
 	}
 
-    Boolean isFstDgt(String s)
+    private Boolean isFstDgt(String s)
     {
         if(s.charAt(0)>='0' && s.charAt(0)<='9')
             return true;
@@ -45,6 +47,8 @@ public class PrintNode
         clNames.put("Int","i32");
         clNames.put("String","i8*");
         clNames.put("Bool","i8");
+
+        decBaseFns();
 
 		for(AST.class_ cl: program.classes)
         {
@@ -101,6 +105,33 @@ public class PrintNode
 
         Codegen.progOut += indent + "ret " + clNames.get(md.typeid) + " " + md.body.type + "\n";
         Codegen.progOut += "}";
+    }
+
+    private void decBaseFns()
+    {
+        Codegen.progOut += "@fStr = private constant [2 x i8] c\"%d\"\n";
+        Codegen.progOut += "declare i32 @printf(i8* , ...)\n";
+        Codegen.progOut += "declare i32 @scanf(i8* , ...)\n\n";
+
+        baseFns.add("out_string");
+        Codegen.progOut += "define void @out_string(i8* %a1) {\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* %a1)\n";
+        Codegen.progOut += indent + "ret void\n}\n";
+
+        baseFns.add("in_string");
+        Codegen.progOut += "define void @in_string(i8* %a1) {\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* %a1)\n";
+        Codegen.progOut += indent + "ret void\n}\n";
+
+        baseFns.add("out_int");
+        Codegen.progOut += "define void @out_int(i32 %a1) {\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32 %a1)\n";
+        Codegen.progOut += indent + "ret void\n}\n";
+
+        baseFns.add("in_int");
+        Codegen.progOut += "define void @in_int(i32 %a1) {\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32 %a1)\n";
+        Codegen.progOut += indent + "ret void\n}\n\n";
     }
 
 	public void Visit(AST.class_ cl)

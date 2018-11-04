@@ -1,10 +1,12 @@
-class Main {
-	i : Int <- 1;
-	
+class Main inherits IO {
+	i : Int;
+	s : String;
 	main() : Int {
 		{
-			if(i=1) then i <- 2 else i <- 3 fi;
-			1 < 2;
+			s <- "ok";
+			s.concat("ok");
+			i <- in_int();
+			1;
 		}
 	};
 	
@@ -14,18 +16,26 @@ class Main {
 };
 
 --Multiple different Redefinitons of foo()
-class A {
+class A inherits IO {
 	j : Int;
-	foo(i : Int) : Int { 10/5 };
+	k : Int;
+	foo(i : Int) : Int { 
+		{
+			j <- in_int();
+			2+2+1;
+		}
+	};
 	fo(h : Int,i : Int) : Int { i };
 };
 
 class B inherits A {
+
 	foo(i : Int) : Int { 1 };
 
 };
 
-class C inherits A {
+class C inherits B {
+	j : Int;
 	foo(i : Int) : Int { 1 };
 
 };
