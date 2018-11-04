@@ -1,10 +1,10 @@
 class Main {
-	i : Int;
-
+	i : Int <- 1;
+	
 	main() : Int {
 		{
-			i <- 1;
-			1;
+			if(i=1) then i <- 2 else i <- 3 fi;
+			1 < 2;
 		}
 	};
 	

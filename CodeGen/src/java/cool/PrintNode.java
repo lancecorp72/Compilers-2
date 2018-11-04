@@ -8,6 +8,7 @@ public class PrintNode
     private String className;
     private String indent;
     private Integer varCnt;
+    private Integer labCnt;
 
 	//Constructor
 	public PrintNode()
@@ -15,6 +16,7 @@ public class PrintNode
         className = "";
         indent = "  ";
         varCnt = 0;
+        labCnt = 1;
         clNames = new HashMap<String,String>();
 	}
 
@@ -25,6 +27,16 @@ public class PrintNode
         else if(s.charAt(0)=='-' && s.charAt(1)>='0' && s.charAt(1)<='9')
             return true;
         return false;
+    }
+
+    int isBool(String s)
+    {
+        if(s.charAt(0) == '0')
+            return 0;
+        else if(s.charAt(0) == '1')
+            return 1;
+        else
+            return -1;
     }
 
 	//Program Visitor
@@ -234,6 +246,106 @@ public class PrintNode
             Visit(bk.l1.get(idx),varNames);
 
             bk.type = bk.l1.get(idx).type;
+        }
+
+        else if(expr instanceof AST.lt)
+        {
+            AST.lt l = (AST.lt)expr;
+            varCnt++;
+            String vname = "%v" + Integer.toString(varCnt);
+            Visit(l.e1,varNames);
+            Visit(l.e2,varNames);
+            if(isBool(l.e1.type) >= 0 && isBool(l.e2.type) >= 0)
+            {
+                Integer value = 0;
+                if(Integer.valueOf(l.e1.type) < Integer.valueOf(l.e2.type))
+                    value = 1;
+                l.type = Integer.toString(value);
+            }
+            else
+            {
+                Codegen.progOut += indent + vname + " = icmp " + "slt " + "i32 " + l.e1.type +","+ l.e2.type + "\n";
+                l.type = vname;
+            }
+        }
+
+        else if(expr instanceof AST.leq)
+        {
+            AST.leq l = (AST.leq)expr;
+            varCnt++;
+            String vname = "%v" + Integer.toString(varCnt);
+            Visit(l.e1,varNames);
+            Visit(l.e2,varNames);
+            if(isBool(l.e1.type) >= 0 && isBool(l.e2.type) >= 0)
+            {
+                Integer value = 0;
+                if(Integer.valueOf(l.e1.type) <= Integer.valueOf(l.e2.type))
+                    value = 1;
+                l.type = Integer.toString(value);
+            }
+            else
+            {
+                Codegen.progOut += indent + vname + " = icmp " + "sle " + "i32 " + l.e1.type +","+ l.e2.type + "\n";
+                l.type = vname;
+            }
+        }
+
+        else if(expr instanceof AST.eq)
+        {
+            AST.eq l = (AST.eq)expr;
+            varCnt++;
+            String vname = "%v" + Integer.toString(varCnt);
+            Visit(l.e1,varNames);
+            Visit(l.e2,varNames);
+            if(isBool(l.e1.type) >= 0 && isBool(l.e2.type) >= 0)
+            {
+                Integer value = 0;
+                if(Integer.valueOf(l.e1.type) == Integer.valueOf(l.e2.type))
+                    value = 1;
+                l.type = Integer.toString(value);
+            }
+            else
+            {
+                Codegen.progOut += indent + vname + " = icmp " + "eq " + "i32 " + l.e1.type +","+ l.e2.type + "\n";
+                l.type = vname;
+            }
+        }
+
+        else if(expr instanceof AST.cond)
+        {
+            AST.cond cd = (AST.cond)expr;
+            Visit(cd.predicate, varNames);
+
+            if(isBool(cd.predicate.type) == 0)
+            {
+                // execute else body
+                Visit(cd.elsebody, varNames);
+            }
+            else if(isBool(cd.predicate.type) == 1)
+            {
+                // execute if body
+                Visit(cd.ifbody, varNames);
+            }
+            else
+            {
+                String ifLabel = "if.then" + Integer.toString(labCnt);
+                String elseLabel = "if.else" + Integer.toString(labCnt);
+                String endLabel = "if.end" + Integer.toString(labCnt);
+                labCnt++;
+
+                Codegen.progOut += indent + "br i1 " + cd.predicate.type + ", " + "label " + ifLabel + ", " + "label " + elseLabel + "\n\n"; 
+
+                Codegen.progOut += ifLabel + ":\n";
+                Visit(cd.ifbody, varNames);
+                Codegen.progOut += indent + "br label " + endLabel + "\n\n";
+                
+                Codegen.progOut += elseLabel + ":\n";
+                Visit(cd.elsebody, varNames);
+                Codegen.progOut += indent + "br label " + endLabel + "\n\n";
+
+                Codegen.progOut += endLabel + ":\n";
+            }
+            // add expr.type
         }
     } 
 }
