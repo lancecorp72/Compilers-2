@@ -95,7 +95,8 @@ public class PrintNode
         {
             if(entry.getValue().name.equals("main"))
                 continue;
-            Visit(entry.getValue());
+            if(baseFns.contains(entry.getKey()) == false)
+                Visit(entry.getValue());
         }
 
         AST.method md = mainClassMethods.get("main");
@@ -137,7 +138,10 @@ public class PrintNode
 	public void Visit(AST.class_ cl)
     {
 		for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
-            Visit(entry.getValue());
+        {
+            if(baseFns.contains(entry.getKey()) == false)
+                Visit(entry.getValue());
+        }
     }
 
     public void Visit(AST.method md)

@@ -355,6 +355,7 @@ public class Visitor
 		{
 			AST.static_dispatch expr = (AST.static_dispatch)exp;
 			Visit(expr.caller);
+			
 			if(expr.caller.type.equals("SELF_TYPE"))
 				expr.caller.type = clName;
 			for(AST.expression e : expr.actuals)
@@ -395,9 +396,9 @@ public class Visitor
 		{
 			AST.dispatch expr = (AST.dispatch)exp;
 			Visit(expr.caller);
+
 			if(expr.caller.type.equals("SELF_TYPE"))
 				expr.caller.type = clName;
-			System.out.println("Dispatch"+expr.caller.type);
 			for(AST.expression e : expr.actuals)
 				Visit(e);
 			

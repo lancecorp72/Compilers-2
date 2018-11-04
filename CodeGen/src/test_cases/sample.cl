@@ -35,7 +35,6 @@ class B inherits A {
 };
 
 class C inherits B {
-	j : Int;
 	foo(i : Int) : Int { 1 };
 
 };
