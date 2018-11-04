@@ -16,7 +16,7 @@ class Main {
 --Multiple different Redefinitons of foo()
 class A {
 	j : Int;
-	foo(i : Int) : Int { 2+2+1 };
+	foo(i : Int) : Int { 10/5 };
 	fo(h : Int,i : Int) : Int { i };
 };
 
