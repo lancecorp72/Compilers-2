@@ -8,6 +8,7 @@ public class PrintNode
     private String className;
     private String indent;
     private Integer varCnt;
+    private Integer labCnt;
 
 	//Constructor
 	public PrintNode()
@@ -15,6 +16,7 @@ public class PrintNode
         className = "";
         indent = "  ";
         varCnt = 0;
+        labCnt = 1;
         clNames = new HashMap<String,String>();
 	}
 
@@ -22,7 +24,19 @@ public class PrintNode
     {
         if(s.charAt(0)>='0' && s.charAt(0)<='9')
             return true;
+        else if(s.charAt(0)=='-' && s.charAt(1)>='0' && s.charAt(1)<='9')
+            return true;
         return false;
+    }
+
+    int isBool(String s)
+    {
+        if(s.charAt(0) == '0')
+            return 0;
+        else if(s.charAt(0) == '1')
+            return 1;
+        else
+            return -1;
     }
 
 	//Program Visitor
@@ -121,6 +135,14 @@ public class PrintNode
 
     public void Visit(AST.expression expr, ScopeTable<String> varNames)
     {
+        if(expr instanceof AST.bool_const)
+        {
+            AST.bool_const b = (AST.bool_const)expr;
+            int value = 0;
+            if(b.value)
+                value = 1;
+            b.type = Integer.toString(value);
+        }
         if(expr instanceof AST.int_const)
         {
             AST.int_const ic = (AST.int_const)expr;
@@ -155,9 +177,63 @@ public class PrintNode
             }
             
             varCnt++;
-            pl.type = "%v" + Integer.toString(varCnt);
-            Codegen.progOut += indent + pl.type + " = add " +  clNames.get(expr.type);
+            String vname = "%v" + Integer.toString(varCnt);
+            Codegen.progOut += indent + vname + " = add " +  clNames.get(expr.type);
             Codegen.progOut += " " + pl.e1.type + ", " + pl.e2.type + "\n";
+            pl.type = vname;
+        }
+
+        else if(expr instanceof AST.sub)
+        {
+            AST.sub s = (AST.sub)expr;
+            Visit(s.e1,varNames);
+            Visit(s.e2,varNames);
+
+            if(isFstDgt(s.e1.type) && isFstDgt(s.e2.type))
+            {
+                s.type = Integer.toString(Integer.valueOf(s.e1.type) - Integer.valueOf(s.e2.type));
+                return;
+            }
+            
+            varCnt++;
+            s.type = "%v" + Integer.toString(varCnt);
+            Codegen.progOut += indent + s.type + " = sub " +  clNames.get(expr.type);
+            Codegen.progOut += " " + s.e1.type + ", " + s.e2.type + "\n";
+        }
+        else if(expr instanceof AST.mul)
+        {
+            AST.mul m = (AST.mul)expr;
+            Visit(m.e1,varNames);
+            Visit(m.e2,varNames);
+
+            if(isFstDgt(m.e1.type) && isFstDgt(m.e2.type))
+            {
+                m.type = Integer.toString(Integer.valueOf(m.e1.type) * Integer.valueOf(m.e2.type));
+                return;
+            }
+            
+            varCnt++;
+            m.type = "%v" + Integer.toString(varCnt);
+            Codegen.progOut += indent + m.type + " = mul " +  clNames.get(expr.type);
+            Codegen.progOut += " " + m.e1.type + ", " + m.e2.type + "\n";
+        }
+
+        else if(expr instanceof AST.divide)
+        {
+            AST.divide div = (AST.divide)expr;
+            Visit(div.e1,varNames);
+            Visit(div.e2,varNames);
+
+            /*if(isFstDgt(div.e1.type) && isFstDgt(div.e2.type))
+            {
+                div.type = Integer.toString(Integer.valueOf(div.e1.type) / Integer.valueOf(div.e2.type));
+                return;
+            }*/
+            
+            varCnt++;
+            div.type = "%v" + Integer.toString(varCnt);
+            Codegen.progOut += indent + div.type + " = div " +  expr.type;
+            Codegen.progOut += " " + div.e1.type + ", " + div.e2.type + "\n";
         }
 
         else if(expr instanceof AST.block)
@@ -170,6 +246,106 @@ public class PrintNode
             Visit(bk.l1.get(idx),varNames);
 
             bk.type = bk.l1.get(idx).type;
+        }
+
+        else if(expr instanceof AST.lt)
+        {
+            AST.lt l = (AST.lt)expr;
+            varCnt++;
+            String vname = "%v" + Integer.toString(varCnt);
+            Visit(l.e1,varNames);
+            Visit(l.e2,varNames);
+            if(isBool(l.e1.type) >= 0 && isBool(l.e2.type) >= 0)
+            {
+                Integer value = 0;
+                if(Integer.valueOf(l.e1.type) < Integer.valueOf(l.e2.type))
+                    value = 1;
+                l.type = Integer.toString(value);
+            }
+            else
+            {
+                Codegen.progOut += indent + vname + " = icmp " + "slt " + "i32 " + l.e1.type +","+ l.e2.type + "\n";
+                l.type = vname;
+            }
+        }
+
+        else if(expr instanceof AST.leq)
+        {
+            AST.leq l = (AST.leq)expr;
+            varCnt++;
+            String vname = "%v" + Integer.toString(varCnt);
+            Visit(l.e1,varNames);
+            Visit(l.e2,varNames);
+            if(isBool(l.e1.type) >= 0 && isBool(l.e2.type) >= 0)
+            {
+                Integer value = 0;
+                if(Integer.valueOf(l.e1.type) <= Integer.valueOf(l.e2.type))
+                    value = 1;
+                l.type = Integer.toString(value);
+            }
+            else
+            {
+                Codegen.progOut += indent + vname + " = icmp " + "sle " + "i32 " + l.e1.type +","+ l.e2.type + "\n";
+                l.type = vname;
+            }
+        }
+
+        else if(expr instanceof AST.eq)
+        {
+            AST.eq l = (AST.eq)expr;
+            varCnt++;
+            String vname = "%v" + Integer.toString(varCnt);
+            Visit(l.e1,varNames);
+            Visit(l.e2,varNames);
+            if(isBool(l.e1.type) >= 0 && isBool(l.e2.type) >= 0)
+            {
+                Integer value = 0;
+                if(Integer.valueOf(l.e1.type) == Integer.valueOf(l.e2.type))
+                    value = 1;
+                l.type = Integer.toString(value);
+            }
+            else
+            {
+                Codegen.progOut += indent + vname + " = icmp " + "eq " + "i32 " + l.e1.type +","+ l.e2.type + "\n";
+                l.type = vname;
+            }
+        }
+
+        else if(expr instanceof AST.cond)
+        {
+            AST.cond cd = (AST.cond)expr;
+            Visit(cd.predicate, varNames);
+
+            if(isBool(cd.predicate.type) == 0)
+            {
+                // execute else body
+                Visit(cd.elsebody, varNames);
+            }
+            else if(isBool(cd.predicate.type) == 1)
+            {
+                // execute if body
+                Visit(cd.ifbody, varNames);
+            }
+            else
+            {
+                String ifLabel = "if.then" + Integer.toString(labCnt);
+                String elseLabel = "if.else" + Integer.toString(labCnt);
+                String endLabel = "if.end" + Integer.toString(labCnt);
+                labCnt++;
+
+                Codegen.progOut += indent + "br i1 " + cd.predicate.type + ", " + "label " + ifLabel + ", " + "label " + elseLabel + "\n\n"; 
+
+                Codegen.progOut += ifLabel + ":\n";
+                Visit(cd.ifbody, varNames);
+                Codegen.progOut += indent + "br label " + endLabel + "\n\n";
+                
+                Codegen.progOut += elseLabel + ":\n";
+                Visit(cd.elsebody, varNames);
+                Codegen.progOut += indent + "br label " + endLabel + "\n\n";
+
+                Codegen.progOut += endLabel + ":\n";
+            }
+            // add expr.type
         }
     } 
 }
