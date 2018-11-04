@@ -6,12 +6,14 @@ public class Visitor
 {
 	private ScopeTable<String> scopeTable;
 	private String filename;
+	private String clName;
 
 	//Constructor
 	public Visitor()
 	{
 		scopeTable = new ScopeTable<String>();
     	filename = "";
+    	clName = "";
 	}
 
 	//Program Visitor
@@ -43,6 +45,7 @@ public class Visitor
 		//New scope for each Class
 		scopeTable.enterScope();
 		filename = cl.filename;
+		clName = cl.name;
 
 		//Insert all declared Class attributes into Scope Table
 		for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs(cl.name).entrySet())
@@ -352,6 +355,8 @@ public class Visitor
 		{
 			AST.static_dispatch expr = (AST.static_dispatch)exp;
 			Visit(expr.caller);
+			if(expr.caller.type.equals("SELF_TYPE"))
+				expr.caller.type = clName;
 			for(AST.expression e : expr.actuals)
 				Visit(e);
 
@@ -376,7 +381,7 @@ public class Visitor
 
 			if(Semantic.inheritance.CheckMangledName(s)==false)
 			{
-				Semantic.reportError(filename,expr.lineNo,"Undefined Method '"+expr.name+"' in Class '"+expr.typeid+"'");
+				Semantic.reportError(filename,expr.lineNo,"Undefined Method '"+expr.name+"' in Class '"+expr.caller.type+"'");
 				expr.type = "Object";
 			}
 			else
@@ -390,6 +395,9 @@ public class Visitor
 		{
 			AST.dispatch expr = (AST.dispatch)exp;
 			Visit(expr.caller);
+			if(expr.caller.type.equals("SELF_TYPE"))
+				expr.caller.type = clName;
+			System.out.println("Dispatch"+expr.caller.type);
 			for(AST.expression e : expr.actuals)
 				Visit(e);
 			
