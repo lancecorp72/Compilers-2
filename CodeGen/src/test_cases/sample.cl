@@ -1,10 +1,11 @@
-class Main {
+class Main inherits IO {
 	i : Int;
 	c : C;
 	main() : Int {
 		{
-			abort();
-			type_name();
+			c <- new C;
+			c.set(11);
+			out_int(c.foo(1));
 			--if (i<5) then 2+2+1 else 2-2-1 fi;
 			1;
 		}
@@ -34,6 +35,7 @@ class B inherits A {
 };
 
 class C inherits B {
-	foo(i : Int) : Int { 1 };
+	foo(i : Int) : Int { j };
+	set(i : Int) : Object { j <- i };
 
 };
