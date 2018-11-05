@@ -10,6 +10,7 @@ public class PrintNode
     private String indent;
     private Integer varCnt;
     private Integer labCnt;
+    private HashMap<String,ArrayList<AST.attr>> classAttrs;
 
 	//Constructor
 	public PrintNode()
@@ -20,6 +21,7 @@ public class PrintNode
         labCnt = 0;
         clNames = new HashMap<String,String>();
         baseFns = new ArrayList<String>();
+        classAttrs = new HashMap<String,ArrayList<AST.attr>>();
 	}
 
     private Boolean isFstDgt(String s)
@@ -48,26 +50,32 @@ public class PrintNode
         clNames.put("String","i8*");
         clNames.put("Bool","i8");
 
-        decBaseFns();
+        DecBaseFns();
 
 		for(AST.class_ cl: program.classes)
         {
-            if(!cl.name.equals("Main"))
-            {
-                Codegen.progOut += "%struct."+cl.name+" = type {";
-                clNames.put(cl.name,"%struct."+cl.name);
+            Codegen.progOut += "%struct."+cl.name+" = type {";
+            clNames.put(cl.name,"%struct."+cl.name);
+            ArrayList<AST.attr> attrs = new ArrayList<AST.attr>();
 
-                for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs(cl.name).entrySet())
-                {
-                    if(entry.getValue().name.equals("self"))
-                        continue;
-                    Codegen.progOut += " "+clNames.get(entry.getValue().typeid)+",";
-                }
-                Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-1);
-                Codegen.progOut += " }\n";
+            for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs(cl.name).entrySet())
+            {
+                if(entry.getValue().name.equals("self"))
+                    continue;
+
+                attrs.add(entry.getValue());
+                String tp = clNames.get(entry.getValue().typeid);
+                if(tp == null)
+                    tp = "%struct."+entry.getValue().typeid;
+                Codegen.progOut += " "+tp+",";
             }
+            Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-1);
+            Codegen.progOut += " }\n";
+            classAttrs.put(cl.name,attrs);
         }
         Codegen.progOut += "\n";
+
+        AddConstructors(program);
 
 		for(AST.class_ cl: program.classes)
         {
@@ -107,12 +115,14 @@ public class PrintNode
         Visit(md);
     }
 
-    private void decBaseFns()
+    private void DecBaseFns()
     {
         Codegen.progOut += "@fStr = private constant [2 x i8] c\"%d\"\n";
+        Codegen.progOut += "@nullStr = private unnamed_addr constant [1 x i8] zeroinitializer\n";
         Codegen.progOut += "declare void @exit(i32)\n";
         Codegen.progOut += "declare i32 @printf(i8* , ...)\n";
-        Codegen.progOut += "declare i32 @scanf(i8* , ...)\n\n";
+        Codegen.progOut += "declare i32 @scanf(i8* , ...)\n";
+        Codegen.progOut += "declare i8* @strcpy(i8* , i8*)\n";
 
         baseFns.add("abort");
         Codegen.progOut += "define void @abort(i32 %a1) {\n";
@@ -140,6 +150,42 @@ public class PrintNode
         Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32* %v1)\n";
         Codegen.progOut += indent + "%v2 = load i32, i32* %v1\n";
         Codegen.progOut += indent + "ret i32 %v2\n}\n\n";
+    }
+
+    private void AddConstructors(AST.program program)
+    {
+		for(AST.class_ cl: program.classes)
+        {
+            String clTyp = "%struct." + cl.name;
+            Codegen.progOut += "define void @init_" + cl.name + "(" + clTyp + " %a1) {\n";
+
+            Integer idx = 0;
+            ArrayList<AST.attr> attrs = classAttrs.get(cl.name);
+            for(; idx<attrs.size(); idx++)
+            {
+                String atTyp = attrs.get(idx).typeid;
+                if(atTyp.equals("SELF_TYPE"))
+                    continue;
+
+                Codegen.progOut += indent + "%v" + idx + " = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 " + idx + "\n";
+                switch(atTyp)
+                {
+                    case "Bool" :
+                        Codegen.progOut += indent + "store i8 0, i8* %v" + idx + "\n";
+                        break;
+                    case "Int" :
+                        Codegen.progOut += indent + "store i32 0, i32* %v" + idx + "\n";
+                        break;
+                    case "String" :
+                        Codegen.progOut += indent + "call i8* @strcpy(i8* %v" + idx + ", i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str, i32 0, i32 0)) @nullStr)\n";
+                        break;
+                    default :
+                        Codegen.progOut += indent + "call void @init_" + atTyp + "(%struct." + atTyp + idx + ")\n";
+                }
+            }
+
+            Codegen.progOut += indent + "ret void\n}\n";
+        }
     }
 
 	public void Visit(AST.class_ cl)
@@ -178,6 +224,13 @@ public class PrintNode
 
         varCnt = 0;
         labCnt = 0;
+        if(md.name.equals("main"))
+        {
+            varCnt++;
+            Codegen.progOut += indent + "%v1 = alloca %struct.Main\n";
+            Codegen.progOut += indent + "call void @init_Main(%struct.Main %v1)\n";
+        }
+
         Visit(md.body,varNames);
 
         Codegen.progOut += indent + "ret " + clNames.get(md.typeid) + " " + md.body.type + "\n";
