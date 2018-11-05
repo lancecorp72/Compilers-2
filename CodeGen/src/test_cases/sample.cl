@@ -1,10 +1,11 @@
 class Main {
 	i : Int;
+	c : C;
 	main() : Int {
 		{
-			if (i<5) then 2+2+1 else 2-2-1 fi;
 			abort();
 			type_name();
+			--if (i<5) then 2+2+1 else 2-2-1 fi;
 			1;
 		}
 	};

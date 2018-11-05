@@ -79,16 +79,16 @@ public class PrintNode
         }
         Codegen.progOut += "\n";
 
-        ScopeTable<String> varNames = new ScopeTable<String>();
-        for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs("Main").entrySet())
-        {
-            if(entry.getValue().name.equals("self"))
-                continue;
+        //ScopeTable<String> varNames = new ScopeTable<String>();
+        //for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs("Main").entrySet())
+        //{
+        //    if(entry.getValue().name.equals("self"))
+        //        continue;
 
-            varNames.insert(entry.getValue().name,"@"+entry.getValue().name);
-            Codegen.progOut += "@"+entry.getValue().name+" = global "+clNames.get(entry.getValue().typeid)+" 0\n";
-        }
-        Codegen.progOut += "\n";
+        //    varNames.insert(entry.getValue().name,"@"+entry.getValue().name);
+        //    Codegen.progOut += "@"+entry.getValue().name+" = global "+clNames.get(entry.getValue().typeid)+" 0\n";
+        //}
+        //Codegen.progOut += "\n";
 
         HashMap<String,AST.method> mainClassMethods = Semantic.inheritance.GetClassMethods("Main");
 		for(Map.Entry<String,AST.method> entry: mainClassMethods.entrySet())
@@ -96,17 +96,15 @@ public class PrintNode
             if(entry.getValue().name.equals("main"))
                 continue;
             if(baseFns.contains(entry.getKey()) == false)
+            {
+                Codegen.progOut += "define "+clNames.get(entry.getValue().typeid)+" @"+Semantic.inheritance.GetMangledName(className,entry.getValue())+"(";
                 Visit(entry.getValue());
+            }
         }
 
         AST.method md = mainClassMethods.get("main");
-        Codegen.progOut += "define "+clNames.get(md.typeid)+" @main () {\n";
-        varCnt = 0;
-        labCnt = 0;
-        Visit(md.body,varNames);
-
-        Codegen.progOut += indent + "ret " + clNames.get(md.typeid) + " " + md.body.type + "\n";
-        Codegen.progOut += "}";
+        Codegen.progOut += "define "+clNames.get(md.typeid)+" @main (";
+        Visit(md);
     }
 
     private void decBaseFns()
@@ -137,9 +135,11 @@ public class PrintNode
         Codegen.progOut += indent + "ret void\n}\n";
 
         baseFns.add("in_int");
-        Codegen.progOut += "define void @in_int(i32 %a1) {\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32 %a1)\n";
-        Codegen.progOut += indent + "ret void\n}\n\n";
+        Codegen.progOut += "define i32 @in_int() {\n";
+        Codegen.progOut += indent + "%v1 = alloca i32\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32* %v1)\n";
+        Codegen.progOut += indent + "%v2 = load i32, i32* %v1\n";
+        Codegen.progOut += indent + "ret i32 %v2\n}\n\n";
     }
 
 	public void Visit(AST.class_ cl)
@@ -153,13 +153,15 @@ public class PrintNode
                 Codegen.progOut += indent + cl.name + "\n}\n";
             }
             else if(baseFns.contains(entry.getKey()) == false)
+            {
+                Codegen.progOut += "define "+clNames.get(entry.getValue().typeid)+" @"+Semantic.inheritance.GetMangledName(className,entry.getValue())+"(";
                 Visit(entry.getValue());
+            }
         }
     }
 
     public void Visit(AST.method md)
     {
-        Codegen.progOut += "define "+clNames.get(md.typeid)+" @"+Semantic.inheritance.GetMangledName(className,md)+"(";
         Integer idx = 1;
 
         ScopeTable<String> varNames = new ScopeTable<String>();
@@ -172,7 +174,7 @@ public class PrintNode
         if(!md.formals.isEmpty())
             Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-2);
 
-        Codegen.progOut += ") {\n";
+        Codegen.progOut += ") {\nentry:\n";
 
         varCnt = 0;
         labCnt = 0;
@@ -276,9 +278,10 @@ public class PrintNode
             // Handling division by zero
             String vname = "%v" + Integer.toString(varCnt);
             varCnt++;
+            labCnt++;
             String abortLabel = "abort" + Integer.toString(labCnt);
             String contLabel = "continue" + Integer.toString(labCnt);
-            labCnt++;
+
             Codegen.progOut += indent + vname + " = icmp eq i32 " + div.e2.type + ", 0\n";
             Codegen.progOut += indent + "br i1 " + vname + ", label %" + abortLabel + ", label %" + contLabel + "\n";
             Codegen.progOut += abortLabel + ":\n";
@@ -294,7 +297,7 @@ public class PrintNode
             
             varCnt++;
             div.type = "%v" + Integer.toString(varCnt);
-            Codegen.progOut += indent + div.type + " = div " +  expr.type;
+            Codegen.progOut += indent + div.type + " = sdiv " +  expr.type;
             Codegen.progOut += " " + div.e1.type + ", " + div.e2.type + "\n";
         }
 
@@ -383,11 +386,13 @@ public class PrintNode
             {
                 // execute else body
                 Visit(cd.elsebody, varNames);
+                cd.type = cd.elsebody.type;
             }
             else if(isBool(cd.predicate.type) == 1)
             {
                 // execute if body
                 Visit(cd.ifbody, varNames);
+                cd.type = cd.ifbody.type;
             }
             else
             {
@@ -407,8 +412,12 @@ public class PrintNode
                 Codegen.progOut += indent + "br label %" + endLabel + "\n\n";
 
                 Codegen.progOut += endLabel + ":\n";
+                varCnt++;
+                String vname = "%v" + Integer.toString(varCnt);
+                Codegen.progOut += indent + vname + " = phi " + clNames.get(cd.type);
+                Codegen.progOut += " [ " + cd.ifbody.type + ", %" + ifLabel + " ], [ " + cd.elsebody.type + ", %" + elseLabel + " ]\n";
+                cd.type = vname;
             }
-            // add expr.type
         }
         else if(expr instanceof AST.loop)
         {
@@ -422,9 +431,9 @@ public class PrintNode
             else if(isBool(lp.predicate.type) == 1)
             {
                 //infinite loop
+                labCnt++;
                 String body = "while.body" + Integer.toString(labCnt);;
                 String end = "return" + Integer.toString(labCnt);
-                labCnt++;
 
                 Codegen.progOut += indent + "br label %" + body + "\n\n";
                 Codegen.progOut += body + ":\n";
@@ -434,11 +443,10 @@ public class PrintNode
             }
             else
             {
-
+                labCnt++;
                 String cond = "while.cond" + Integer.toString(labCnt);
                 String body = "while.body" + Integer.toString(labCnt);
                 String end = "while.end" + Integer.toString(labCnt);
-                labCnt++;
 
                 Codegen.progOut += indent + "br label %" + cond + "\n\n";
                 Codegen.progOut += cond + ":\n";
