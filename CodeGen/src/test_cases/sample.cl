@@ -1,10 +1,10 @@
-class Main inherits IO {
-	i : Int <- 0;
-	j : Int;
-	s : String;
+class Main {
+	i : Int;
 	main() : Int {
 		{
-			j = 5 / i;
+			if (i<5) then 2+2+1 else 2-2-1 fi;
+			abort();
+			type_name();
 			1;
 		}
 	};
@@ -20,8 +20,7 @@ class A inherits IO {
 	k : Int;
 	foo(i : Int) : Int { 
 		{
-			j <- in_int();
-			2+2+1;
+			1;
 		}
 	};
 	fo(h : Int,i : Int) : Int { i };
