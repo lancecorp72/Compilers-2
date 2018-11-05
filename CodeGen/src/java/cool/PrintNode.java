@@ -17,7 +17,7 @@ public class PrintNode
         className = "";
         indent = "  ";
         varCnt = 0;
-        labCnt = 1;
+        labCnt = 0;
         clNames = new HashMap<String,String>();
         baseFns = new ArrayList<String>();
 	}
@@ -102,6 +102,7 @@ public class PrintNode
         AST.method md = mainClassMethods.get("main");
         Codegen.progOut += "define "+clNames.get(md.typeid)+" @main () {\n";
         varCnt = 0;
+        labCnt = 0;
         Visit(md.body,varNames);
 
         Codegen.progOut += indent + "ret " + clNames.get(md.typeid) + " " + md.body.type + "\n";
@@ -111,8 +112,14 @@ public class PrintNode
     private void decBaseFns()
     {
         Codegen.progOut += "@fStr = private constant [2 x i8] c\"%d\"\n";
+        Codegen.progOut += "declare void @exit(i32)\n";
         Codegen.progOut += "declare i32 @printf(i8* , ...)\n";
         Codegen.progOut += "declare i32 @scanf(i8* , ...)\n\n";
+
+        baseFns.add("abort");
+        Codegen.progOut += "define void @abort(i32 %a1) {\n";
+        Codegen.progOut += indent + "call void @exit(i32 %a1)\n";
+        Codegen.progOut += indent + "ret void\n}\n";
 
         baseFns.add("out_string");
         Codegen.progOut += "define void @out_string(i8* %a1) {\n";
@@ -137,16 +144,22 @@ public class PrintNode
 
 	public void Visit(AST.class_ cl)
     {
+
 		for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
         {
-            if(baseFns.contains(entry.getKey()) == false)
+            if(entry.getKey().equals("type_name"))
+            {
+                Codegen.progOut += "define i8* @"+Semantic.inheritance.GetMangledName(className,entry.getValue())+"() {\n";
+                Codegen.progOut += indent + cl.name + "\n}\n";
+            }
+            else if(baseFns.contains(entry.getKey()) == false)
                 Visit(entry.getValue());
         }
     }
 
     public void Visit(AST.method md)
     {
-        Codegen.progOut += "define "+clNames.get(md.typeid)+" @"+Semantic.inheritance.GetMangledName(className,md)+" (";
+        Codegen.progOut += "define "+clNames.get(md.typeid)+" @"+Semantic.inheritance.GetMangledName(className,md)+"(";
         Integer idx = 1;
 
         ScopeTable<String> varNames = new ScopeTable<String>();
@@ -162,6 +175,7 @@ public class PrintNode
         Codegen.progOut += ") {\n";
 
         varCnt = 0;
+        labCnt = 0;
         Visit(md.body,varNames);
 
         Codegen.progOut += indent + "ret " + clNames.get(md.typeid) + " " + md.body.type + "\n";
@@ -290,6 +304,7 @@ public class PrintNode
             String vname = "%v" + Integer.toString(varCnt);
             Visit(l.e1,varNames);
             Visit(l.e2,varNames);
+
             if(isBool(l.e1.type) >= 0 && isBool(l.e2.type) >= 0)
             {
                 Integer value = 0;
@@ -363,10 +378,10 @@ public class PrintNode
             }
             else
             {
+                labCnt++;
                 String ifLabel = "if.then" + Integer.toString(labCnt);
                 String elseLabel = "if.else" + Integer.toString(labCnt);
                 String endLabel = "if.end" + Integer.toString(labCnt);
-                labCnt++;
 
                 Codegen.progOut += indent + "br i1 " + cd.predicate.type + ", " + "label " + ifLabel + ", " + "label " + elseLabel + "\n\n"; 
 
