@@ -117,7 +117,8 @@ public class PrintNode
 
     private void DecBaseFns()
     {
-        Codegen.progOut += "@fStr = private constant [2 x i8] c\"%d\"\n";
+        Codegen.progOut += "@inInt = private constant [2 x i8] c\"%d\"\n";
+        Codegen.progOut += "@outInt = private constant [3 x i8] c\"%d\\0A\"\n";
         Codegen.progOut += "@nullStr = private unnamed_addr constant [1 x i8] zeroinitializer\n";
         Codegen.progOut += "declare void @exit(i32)\n";
         Codegen.progOut += "declare i32 @printf(i8* , ...)\n";
@@ -143,25 +144,24 @@ public class PrintNode
 
         baseFns.add("out_int");
         Codegen.progOut += "define void @out_int(i32 %a1) {\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32 %a1)\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @outInt, i32 0, i32 0),i32 %a1)\n";
         Codegen.progOut += indent + "ret void\n}\n";
 
         baseFns.add("in_int");
         Codegen.progOut += "define i32 @in_int() {\n";
         Codegen.progOut += indent + "%v1 = alloca i32\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32* %v1)\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @inInt, i32 0, i32 0),i32* %v1)\n";
         Codegen.progOut += indent + "%v2 = load i32, i32* %v1\n";
         Codegen.progOut += indent + "ret i32 %v2\n}\n\n";
 
         baseFns.add("length");
         Codegen.progOut += "define i32 @length(i8* %a1) {\n";
-        Codegen.progOut += indent + "%v1 = alloca i32\n";
         Codegen.progOut += indent + "%v1 = call i32 @strlen(i8* %a1)\n";
         Codegen.progOut += indent + "ret i32 %v1\n}\n\n";
 
         baseFns.add("concat");
         Codegen.progOut += "define i8* @concat(i8* %a1, i8* %a2){\n";
-        Codegen.progOut += indent + "call i8* @strcat(i8* a1, i8* a2)\n";
+        Codegen.progOut += indent + "call i8* @strcat(i8* %a1, i8* %a2)\n";
         Codegen.progOut += indent + "ret i8* %a1\n}\n\n";
 
 
@@ -173,7 +173,7 @@ public class PrintNode
 		for(AST.class_ cl: program.classes)
         {
             String clTyp = "%struct." + cl.name;
-            Codegen.progOut += "define void @init_" + cl.name + "(" + clTyp + " %a1) {\n";
+            Codegen.progOut += "define void @init_" + cl.name + "(" + clTyp + "* %a1) {\n";
 
             Integer idx = 0;
             ArrayList<AST.attr> attrs = classAttrs.get(cl.name);
@@ -183,6 +183,7 @@ public class PrintNode
                 if(atTyp.equals("SELF_TYPE"))
                     continue;
 
+                //Codegen.progOut += "
                 Codegen.progOut += indent + "%v" + idx + " = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 " + idx + "\n";
                 switch(atTyp)
                 {
@@ -193,7 +194,8 @@ public class PrintNode
                         Codegen.progOut += indent + "store i32 0, i32* %v" + idx + "\n";
                         break;
                     case "String" :
-                        Codegen.progOut += indent + "call i8* @strcpy(i8* %v" + idx + ", i8* getelementptr inbounds ([1 x i8], [1 x i8]* @.str, i32 0, i32 0)) @nullStr)\n";
+                        Codegen.progOut += indent + "%p" + idx + " = load i8*, i8** %v" + idx + "\n";
+                        Codegen.progOut += indent + "call i8* @strcpy(i8* %p" + idx + ", i8* getelementptr inbounds ([1 x i8], [1 x i8]* @nullStr, i32 0, i32 0))\n";
                         break;
                     default :
                         Codegen.progOut += indent + "call void @init_" + atTyp + "(%struct." + atTyp + idx + ")\n";
@@ -244,7 +246,7 @@ public class PrintNode
         {
             varCnt++;
             Codegen.progOut += indent + "%v1 = alloca %struct.Main\n";
-            Codegen.progOut += indent + "call void @init_Main(%struct.Main %v1)\n";
+            Codegen.progOut += indent + "call void @init_Main(%struct.Main* %v1)\n";
         }
 
         Visit(md.body,varNames);
