@@ -112,7 +112,9 @@ public class PrintNode
         Codegen.progOut += "@fStr = private constant [2 x i8] c\"%d\"\n";
         Codegen.progOut += "declare void @exit(i32)\n";
         Codegen.progOut += "declare i32 @printf(i8* , ...)\n";
-        Codegen.progOut += "declare i32 @scanf(i8* , ...)\n\n";
+        Codegen.progOut += "declare i32 @scanf(i8* , ...)\n";
+        Codegen.progOut += "declare i32 @strlen(i8*)\n";
+        Codegen.progOut += "declare i8* @strcat(i8*, i8*)\n\n";
 
         baseFns.add("abort");
         Codegen.progOut += "define void @abort(i32 %a1) {\n";
@@ -140,6 +142,20 @@ public class PrintNode
         Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32* %v1)\n";
         Codegen.progOut += indent + "%v2 = load i32, i32* %v1\n";
         Codegen.progOut += indent + "ret i32 %v2\n}\n\n";
+
+        baseFns.add("length");
+        Codegen.progOut += "define i32 @length(i8* %a1) {\n";
+        Codegen.progOut += indent + "%v1 = alloca i32\n";
+        Codegen.progOut += indent + "%v1 = call i32 @strlen(i8* %a1)\n";
+        Codegen.progOut += indent + "ret i32 %v1\n}\n\n";
+
+        baseFns.add("concat");
+        Codegen.progOut += "define i8* @concat(i8* %a1, i8* %a2){\n";
+        Codegen.progOut += indent + "call i8* @strcat(i8* a1, i8* a2)\n";
+        Codegen.progOut += indent + "ret i8* %a1\n}\n\n";
+
+
+
     }
 
 	public void Visit(AST.class_ cl)
