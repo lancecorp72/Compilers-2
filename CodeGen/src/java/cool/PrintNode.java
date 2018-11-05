@@ -368,19 +368,61 @@ public class PrintNode
                 String endLabel = "if.end" + Integer.toString(labCnt);
                 labCnt++;
 
-                Codegen.progOut += indent + "br i1 " + cd.predicate.type + ", " + "label " + ifLabel + ", " + "label " + elseLabel + "\n\n"; 
+                Codegen.progOut += indent + "br i1 " + cd.predicate.type + ", " + "label %" + ifLabel + ", " + "label %" + elseLabel + "\n\n"; 
 
                 Codegen.progOut += ifLabel + ":\n";
                 Visit(cd.ifbody, varNames);
-                Codegen.progOut += indent + "br label " + endLabel + "\n\n";
+                Codegen.progOut += indent + "br label %" + endLabel + "\n\n";
                 
                 Codegen.progOut += elseLabel + ":\n";
                 Visit(cd.elsebody, varNames);
-                Codegen.progOut += indent + "br label " + endLabel + "\n\n";
+                Codegen.progOut += indent + "br label %" + endLabel + "\n\n";
 
                 Codegen.progOut += endLabel + ":\n";
             }
             // add expr.type
+        }
+        else if(expr instanceof AST.loop)
+        {
+            AST.loop lp = (AST.loop)expr;
+            Visit(lp.predicate, varNames);
+
+            if(isBool(lp.predicate.type) == 0)
+            {
+                //Do nothing
+            }
+            else if(isBool(lp.predicate.type) == 1)
+            {
+                //infinite loop
+                String body = "while.body" + Integer.toString(labCnt);;
+                String end = "return" + Integer.toString(labCnt);
+                labCnt++;
+
+                Codegen.progOut += indent + "br label %" + body + "\n\n";
+                Codegen.progOut += body + ":\n";
+                Visit(lp.body, varNames);
+                Codegen.progOut += indent + "br label %" + body + "\n\n";
+                Codegen.progOut += end + ":\n";
+            }
+            else
+            {
+
+                String cond = "while.cond" + Integer.toString(labCnt);
+                String body = "while.body" + Integer.toString(labCnt);
+                String end = "while.end" + Integer.toString(labCnt);
+                labCnt++;
+
+                Codegen.progOut += indent + "br label %" + cond + "\n\n";
+                Codegen.progOut += cond + ":\n";
+                Visit(lp.predicate, varNames);
+                Codegen.progOut += indent + "br i1 " + lp.predicate.type + ", label %" + body + ", label %" + end + "\n\n";
+                
+                Codegen.progOut += body + ":\n";
+                Visit(lp.body, varNames);
+                Codegen.progOut += indent + "br label %" + cond + "\n\n";
+
+                Codegen.progOut += end + ":\n";
+            }
         }
     } 
 }

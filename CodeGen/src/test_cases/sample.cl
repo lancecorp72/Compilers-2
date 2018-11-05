@@ -1,11 +1,9 @@
 class Main inherits IO {
-	i : Int;
+	i : Int <- 1;
 	s : String;
 	main() : Int {
 		{
-			s <- "ok";
-			s.concat("ok");
-			i <- in_int();
+			while(10 < 1) loop i <- i + 1 pool;
 			1;
 		}
 	};
