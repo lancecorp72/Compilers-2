@@ -258,12 +258,25 @@ public class PrintNode
             AST.divide div = (AST.divide)expr;
             Visit(div.e1,varNames);
             Visit(div.e2,varNames);
+            
+            // Handling division by zero
+            String vname = "%v" + Integer.toString(varCnt);
+            varCnt++;
+            String abortLabel = "abort" + Integer.toString(labCnt);
+            String contLabel = "continue" + Integer.toString(labCnt);
+            labCnt++;
+            Codegen.progOut += indent + vname + " = icmp eq i32 " + div.e2.type + ", 0\n";
+            Codegen.progOut += indent + "br i1 " + vname + ", label %" + abortLabel + ", label %" + contLabel + "\n";
+            Codegen.progOut += abortLabel + ":\n";
+            Codegen.progOut += indent + "call void @abort()\n";
+            Codegen.progOut += contLabel + ":\n";
 
-            /*if(isFstDgt(div.e1.type) && isFstDgt(div.e2.type))
+
+            if(isFstDgt(div.e1.type) && isFstDgt(div.e2.type) && Integer.valueOf(div.e2.type) != 0)
             {
                 div.type = Integer.toString(Integer.valueOf(div.e1.type) / Integer.valueOf(div.e2.type));
                 return;
-            }*/
+            }
             
             varCnt++;
             div.type = "%v" + Integer.toString(varCnt);

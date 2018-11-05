@@ -1,9 +1,10 @@
 class Main inherits IO {
-	i : Int <- 1;
+	i : Int <- 0;
+	j : Int;
 	s : String;
 	main() : Int {
 		{
-			while(10 < 1) loop i <- i + 1 pool;
+			j = 5 / i;
 			1;
 		}
 	};
