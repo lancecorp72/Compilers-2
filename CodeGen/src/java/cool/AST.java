@@ -310,7 +310,7 @@ public class AST{
         public List<expression> actuals;
         public static_dispatch(expression v1, String t, String n, List<expression> a, int l){
                 caller = v1;
-	typeid = t;
+				typeid = t;
                 name = n;
                 actuals = a;
                 lineNo = l;

@@ -6,11 +6,10 @@ class Main inherits IO {
 		{
 			--c <- new C;
 			s <- "str\n";
-			--c@A.foo(1);
+			c@A.foo(1);
 			out_int(c.ret());
 			out_string(s);
-			i <- 1;
-			--if (i<5) then 2+2+1 else 2-2-1 fi;
+			i <- if (isvoid c) then 2+2+1 else 2-2-1 fi;
 			1;
 		}
 	};
