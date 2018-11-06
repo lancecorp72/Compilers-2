@@ -1,9 +1,11 @@
 class Main inherits IO {
 	i : Int;
-
+	a : C;
 	main() : Int {
 		{
-
+			a <- new C;
+			a@A.foo(1);
+			i <- 1;
 			--if (i<5) then 2+2+1 else 2-2-1 fi;
 			1;
 		}
@@ -16,14 +18,16 @@ class Main inherits IO {
 
 --Multiple different Redefinitons of foo()
 class A inherits IO {
-	j : String;
-	k : String;
+	j : Int;
+	k : Int;
 	foo(i : Int) : Int { 
 		{
-			1;
+			j <- 2;
+			j;
 		}
 	};
 	fo(h : Int,i : Int) : Int { 1 };
+	ret() : Int { j };
 };
 
 class B inherits A {

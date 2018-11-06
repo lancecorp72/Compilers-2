@@ -369,7 +369,7 @@ public class Visitor
 			}
 			else if(Semantic.inheritance.isConforming(expr.typeid,expr.caller.type)==false)
 			{
-				Semantic.reportError(filename,expr.lineNo,"Caller of Type '"+expr.typeid+"' cannot conform to Static Dispatch Type '"+expr.name+"'");
+				Semantic.reportError(filename,expr.lineNo,"Caller of Type '"+expr.caller.type+"' cannot conform to Static Dispatch Type '"+expr.typeid+"'");
 				expr.type = "Object";
 			
 			}

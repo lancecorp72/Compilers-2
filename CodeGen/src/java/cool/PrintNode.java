@@ -54,7 +54,7 @@ public class PrintNode
 
 		for(AST.class_ cl: program.classes)
         {
-            Codegen.progOut += "%struct."+cl.name+" = type {";
+            Codegen.progOut += "%struct."+cl.name+" = type { i8,";
             clNames.put(cl.name,"%struct."+cl.name);
             ArrayList<AST.attr> attrs = new ArrayList<AST.attr>();
 
@@ -117,8 +117,7 @@ public class PrintNode
 
     private void DecBaseFns()
     {
-        Codegen.progOut += "@inInt = private constant [2 x i8] c\"%d\"\n";
-        Codegen.progOut += "@outInt = private constant [3 x i8] c\"%d\\0A\"\n";
+        Codegen.progOut += "@fStr = private constant [2 x i8] c\"%d\"\n";
         Codegen.progOut += "@nullStr = private unnamed_addr constant [1 x i8] zeroinitializer\n";
         Codegen.progOut += "declare void @exit(i32)\n";
         Codegen.progOut += "declare i32 @printf(i8* , ...)\n";
@@ -144,13 +143,13 @@ public class PrintNode
 
         baseFns.add("out_int");
         Codegen.progOut += "define void @out_int(i32 %a1) {\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @outInt, i32 0, i32 0),i32 %a1)\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32 %a1)\n";
         Codegen.progOut += indent + "ret void\n}\n";
 
         baseFns.add("in_int");
         Codegen.progOut += "define i32 @in_int() {\n";
         Codegen.progOut += indent + "%v1 = alloca i32\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @inInt, i32 0, i32 0),i32* %v1)\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32* %v1)\n";
         Codegen.progOut += indent + "%v2 = load i32, i32* %v1\n";
         Codegen.progOut += indent + "ret i32 %v2\n}\n\n";
 
@@ -174,12 +173,14 @@ public class PrintNode
         {
             String clTyp = "%struct." + cl.name;
             Codegen.progOut += "define void @init_" + cl.name + "(" + clTyp + "* %a1) {\n";
+            Codegen.progOut += indent + "%v0 = getelementptr i8, i8* %a1, i32 0, i32 0\n";
+            Codegen.progOut += indent + "store i8 1, i8* %v0\n";
 
-            Integer idx = 0;
+            Integer idx = 1;
             ArrayList<AST.attr> attrs = classAttrs.get(cl.name);
-            for(; idx<attrs.size(); idx++)
+            for(; idx<=attrs.size(); idx++)
             {
-                String atTyp = attrs.get(idx).typeid;
+                String atTyp = attrs.get(idx-1).typeid;
                 if(atTyp.equals("SELF_TYPE"))
                     continue;
 
@@ -194,11 +195,12 @@ public class PrintNode
                         Codegen.progOut += indent + "store i32 0, i32* %v" + idx + "\n";
                         break;
                     case "String" :
-                        Codegen.progOut += indent + "%p" + idx + " = load i8*, i8** %v" + idx + "\n";
-                        Codegen.progOut += indent + "call i8* @strcpy(i8* %p" + idx + ", i8* getelementptr inbounds ([1 x i8], [1 x i8]* @nullStr, i32 0, i32 0))\n";
+                        Codegen.progOut += indent + "%str" + idx + " = load i8*, i8** %v" + idx + "\n";
+                        Codegen.progOut += indent + "call i8* @strcpy(i8* %str" + idx + ", i8* getelementptr inbounds ([1 x i8], [1 x i8]* @nullStr, i32 0, i32 0))\n";
                         break;
                     default :
-                        Codegen.progOut += indent + "call void @init_" + atTyp + "(%struct." + atTyp + idx + ")\n";
+                        Codegen.progOut += indent + "%set" + idx + " = getelementptr %struct." + atTyp + ", %struct." + atTyp + "* %v" + idx + ", i32 0, i32 0\n";
+                        Codegen.progOut += indent + "store i8 0, i8* %set" + idx + "\n";
                 }
             }
 
@@ -284,6 +286,11 @@ public class PrintNode
             String vname = varNames.lookUpGlobal(asgn.name);
 
             Codegen.progOut += indent + "store " + clNames.get(asgn.type) + " " + asgn.e1.type + ", " + clNames.get(asgn.type) + "* " + vname + "\n";
+        }
+
+        else if(expr instanceof AST.new_)
+        {
+            AST.new_ nw = (AST.new_)expr;
         }
 
         else if(expr instanceof AST.plus)
