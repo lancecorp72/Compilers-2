@@ -387,8 +387,10 @@ public class Inheritance
 		{
 			String s = GetMangledName(curNode.name,entry.getKey());
 			if(mangledNames.containsKey(s)==true)
+			{
 				if(mangledNames.get(s).equals(entry.getKey().typeid)==false)
 					Semantic.reportError(curNode.filename,entry.getKey().lineNo,"Redefintion of Method '"+entry.getValue()+"()' in Class '"+curNode.name+"' should have Return type: '"+entry.getKey().typeid+"' as defined in Class '"+entry.getValue()+"'");
+			}
 			else if(curNode.methods.containsKey(entry.getKey().name))
 				Semantic.reportError(curNode.filename,entry.getKey().lineNo,"Redefintion of Method '"+entry.getValue()+"()' in Class '"+curNode.name+"' should have same Arguments as in Class '"+entry.getValue()+"'");
 			else
@@ -404,7 +406,7 @@ public class Inheritance
 			if(mangledNames.containsKey(s)==true)
 			{
 				if(mangledNames.get(s).equals(entry.getValue().typeid)==false)
-				Semantic.reportError(curNode.filename,entry.getValue().lineNo,"Redefintion of Method '"+entry.getKey()+"()' in Class '"+curNode.name+"' should have Return type: '"+entry.getValue().typeid+"' as defined in Class '"+parNode.name+"'");
+					Semantic.reportError(curNode.filename,entry.getValue().lineNo,"Redefintion of Method '"+entry.getKey()+"()' in Class '"+curNode.name+"' should have Return type: '"+entry.getValue().typeid+"' as defined in Class '"+parNode.name+"'");
 			}
 			else if(curNode.methods.containsKey(entry.getValue().name)==true)
 				Semantic.reportError(curNode.filename,entry.getValue().lineNo,"Redefintion of Method '"+entry.getKey()+"()' in Class '"+curNode.name+"' should have same Arguments as in Class '"+parNode.name+"'");

@@ -9,11 +9,11 @@ public class Codegen{
 
 	public Codegen(AST.program program, PrintWriter out){
 		//Write Code generator code here
-        //out.println("; Start of Code Generation");
-        progOut = "; Start of Code Generation\n";
-        progOut = "source_filename = \""+program.classes.get(0).filename+"\"\n";
-        progOut += "target triple = \"x86_64-unknown-linux-gnu\"\n\n";
+        out.println("; Start of Code Generation");
+        out.println("source_filename = \""+program.classes.get(0).filename+"\"");
+        out.println("target triple = \"x86_64-unknown-linux-gnu\"\n");
 
+        progOut = "";
         PrintNode pn = new PrintNode();
         pn.Visit(program);
 
