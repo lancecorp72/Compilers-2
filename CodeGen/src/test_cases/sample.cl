@@ -1,11 +1,17 @@
 class Main inherits IO {
-	i : Int <- 1;
-	a : C <- new C;
-	b : Int <- 0;
-	h : Bool;
+	i : Int;
+	c : C;
+	s : String;
 	main() : Int {
 		{
-			isvoid i;
+			--c <- new C;
+			s <- "str\n";
+			--c@A.foo(1);
+			out_int(c.ret());
+			out_string(s);
+			i <- 1;
+			--if (i<5) then 2+2+1 else 2-2-1 fi;
+			1;
 		}
 	};
 	

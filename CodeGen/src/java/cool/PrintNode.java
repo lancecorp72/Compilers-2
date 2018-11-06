@@ -4,12 +4,15 @@ import java.util.*;
 
 public class PrintNode
 {
+    //Class Variables
     private HashMap<String,String> clNames;
     private ArrayList<String> baseFns;
     private String className;
     private String indent;
     private Integer varCnt;
     private Integer labCnt;
+    private Integer globCnt;
+    private String globOut;
     private HashMap<String,ArrayList<AST.attr>> classAttrs;
 
 	//Constructor
@@ -17,13 +20,16 @@ public class PrintNode
 	{
         className = "";
         indent = "  ";
+        globOut = "";
         varCnt = 0;
         labCnt = 0;
+        globCnt = 0;
         clNames = new HashMap<String,String>();
         baseFns = new ArrayList<String>();
         classAttrs = new HashMap<String,ArrayList<AST.attr>>();
 	}
 
+    //Check if String is a Number by checking First Digit
     private Boolean isFstDgt(String s)
     {
         if(s.charAt(0)>='0' && s.charAt(0)<='9')
@@ -33,6 +39,7 @@ public class PrintNode
         return false;
     }
 
+    //Check if First Char of String is Boolean
     int isBool(String s)
     {
         if(s.charAt(0) == '0')
@@ -50,8 +57,12 @@ public class PrintNode
         clNames.put("String","i8*");
         clNames.put("Bool","i8");
 
+        //Insert Base Functions
         DecBaseFns();
+        Codegen.progOut += "\n";
 
+        //Declare Class Structs
+        Codegen.progOut += "; Class Attributes defined as Structs\n";
 		for(AST.class_ cl: program.classes)
         {
             Codegen.progOut += "%struct."+cl.name+" = type { i8,";
@@ -75,8 +86,12 @@ public class PrintNode
         }
         Codegen.progOut += "\n";
 
+        //Add Class Initializers
         AddConstructors(program);
+        Codegen.progOut += "\n";
 
+        //Insert Class Methods
+        Codegen.progOut += "; Class Methods Definitions\n";
 		for(AST.class_ cl: program.classes)
         {
             if(!cl.name.equals("Main"))
@@ -98,7 +113,9 @@ public class PrintNode
         //}
         //Codegen.progOut += "\n";
 
+        //Insert Main Methods
         HashMap<String,AST.method> mainClassMethods = Semantic.inheritance.GetClassMethods("Main");
+        className = "Main";         
 		for(Map.Entry<String,AST.method> entry: mainClassMethods.entrySet())
         {
             if(entry.getValue().name.equals("main"))
@@ -110,16 +127,20 @@ public class PrintNode
             }
         }
 
+        //main() Function
+        Codegen.progOut += "\n; Main Function\n";
         AST.method md = mainClassMethods.get("main");
         Codegen.progOut += "define "+clNames.get(md.typeid)+" @main (";
         Visit(md);
+
+        //Concat Global variables to Output
+        Codegen.progOut = globOut + "\n" + Codegen.progOut;
     }
 
+    //Substring Function
     private void emitSubstr()
     {
-        //----------------------------------------------------
-
-        Codegen.progOut += "define dso_local i8* @substr(i8* %s, i32 %i, i32 %l) #0 {\nentry:\n  %s.addr = alloca i8*, align 8\n  %i.addr = alloca i32, align 4\n"+ 
+        Codegen.progOut += "define i8* @substr(i8* %s, i32 %i, i32 %l) #0 {\nentry:\n  %s.addr = alloca i8*, align 8\n  %i.addr = alloca i32, align 4\n"+ 
         " %l.addr = alloca i32, align 4\n  %k = alloca i32, align 4\n  %res = alloca i8*, align 8\n  %j = alloca i32, align 4\n  store i8* %s, i8** %s.addr, align 8\n"+
         "  store i32 %i, i32* %i.addr, align 4\n  store i32 %l, i32* %l.addr, align 4\n  %0 = load i8*, i8** %s.addr, align 8\n  %call = call i32 @strlen(i8* %0) #5\n "+
         " store i32 %call, i32* %k, align 4\n  %1 = load i32, i32* %k, align 4\n  %2 = load i32, i32* %l.addr, align 4\n  %sub = sub nsw i32 %1, %2\n  %3 = load i32, i32* %i.addr, align 4\n"+
@@ -132,13 +153,17 @@ public class PrintNode
         "  %arrayidx = getelementptr inbounds i8, i8* %7, i64 %idxprom\n  %10 = load i8, i8* %arrayidx, align 1\n  %11 = load i8*, i8** %res, align 8\n  %12 = load i32, i32* %j, align 4\n"+
         "  %idxprom8 = sext i32 %12 to i64\n  %arrayidx9 = getelementptr inbounds i8, i8* %11, i64 %idxprom8\n  store i8 %10, i8* %arrayidx9, align 1\n  %13 = load i32, i32* %j, align 4\n"+
         "  %inc = add nsw i32 %13, 1\n  store i32 %inc, i32* %j, align 4\n  br label %while.cond\n\nwhile.end:\n  %14 = load i8*, i8** %res, align 8\n  ret i8* %14\n}\n\n";
-
-        //----------------------------------------------------
     }
+
+    //Add Base Functions
     private void DecBaseFns()
     {
-        Codegen.progOut += "@fStr = private constant [2 x i8] c\"%d\"\n";
-        Codegen.progOut += "@nullStr = private unnamed_addr constant [1 x i8] zeroinitializer\n";
+        globOut += "; Global Constants\n";
+        globOut += "@dStr = private constant [2 x i8] c\"%d\"\n";
+        globOut += "@sStr = private constant [2 x i8] c\"%s\"\n";
+        globOut += "@nullStr = private unnamed_addr constant [1 x i8] zeroinitializer\n";
+
+        Codegen.progOut += "; C-functions\n";
         Codegen.progOut += "declare void @exit(i32)\n";
         Codegen.progOut += "declare i32 @printf(i8* , ...)\n";
         Codegen.progOut += "declare i32 @scanf(i8* , ...)\n";
@@ -146,32 +171,33 @@ public class PrintNode
         Codegen.progOut += "declare i8* @strcat(i8*, i8*)\n";
         Codegen.progOut += "declare i8* @strcpy(i8*, i8*)\n\n";
 
+        Codegen.progOut += "; Basic Cool Functions\n";
         baseFns.add("abort");
         Codegen.progOut += "define void @abort(i32 %a1) {\n";
         Codegen.progOut += indent + "call void @exit(i32 %a1)\n";
-        Codegen.progOut += indent + "ret void\n}\n";
+        Codegen.progOut += indent + "ret void\n}\n\n";
 
         baseFns.add("out_string");
         Codegen.progOut += "define void @out_string(i8* %a1) {\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* %a1)\n";
-        Codegen.progOut += indent + "ret void\n}\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @sStr, i32 0, i32 0),i8* %a1)\n";
+        Codegen.progOut += indent + "ret void\n}\n\n";
 
         baseFns.add("in_string");
         Codegen.progOut += "define void @in_string(i8* %a1) {\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* %a1)\n";
-        Codegen.progOut += indent + "ret void\n}\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @sStr, i32 0, i32 0),i8* %a1)\n";
+        Codegen.progOut += indent + "ret void\n}\n\n";
 
         baseFns.add("out_int");
         Codegen.progOut += "define void @out_int(i32 %a1) {\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32 %a1)\n";
-        Codegen.progOut += indent + "ret void\n}\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @dStr, i32 0, i32 0),i32 %a1)\n";
+        Codegen.progOut += indent + "ret void\n}\n\n";
 
         baseFns.add("in_int");
         Codegen.progOut += "define i32 @in_int() {\n";
         Codegen.progOut += indent + "%v1 = alloca i32\n";
-        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @fStr, i32 0, i32 0),i32* %v1)\n";
+        Codegen.progOut += indent + "call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @sStr, i32 0, i32 0),i32* %v1)\n";
         Codegen.progOut += indent + "%v2 = load i32, i32* %v1\n";
-        Codegen.progOut += indent + "ret i32 %v2\n}\n\n";
+        Codegen.progOut += indent + "ret i32 %v2\n}\n\n\n";
 
         baseFns.add("length");
         Codegen.progOut += "define i32 @length(i8* %a1) {\n";
@@ -185,15 +211,19 @@ public class PrintNode
 
         baseFns.add("substr");
         emitSubstr();
+      
+        Codegen.progOut += "\n";
     }
 
+    //Class Initializers
     private void AddConstructors(AST.program program)
     {
+        Codegen.progOut += "; Class Initializtion Methods\n";
 		for(AST.class_ cl: program.classes)
         {
             String clTyp = "%struct." + cl.name;
             Codegen.progOut += "define void @init_" + cl.name + "(" + clTyp + "* %a1) {\n";
-            Codegen.progOut += indent + "%v0 = getelementptr i8, i8* %a1, i32 0, i32 0\n";
+            Codegen.progOut += indent + "%v0 = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 0\n";
             Codegen.progOut += indent + "store i8 1, i8* %v0\n";
 
             Integer idx = 1;
@@ -204,7 +234,6 @@ public class PrintNode
                 if(atTyp.equals("SELF_TYPE"))
                     continue;
 
-                //Codegen.progOut += "
                 Codegen.progOut += indent + "%v" + idx + " = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 " + idx + "\n";
                 switch(atTyp)
                 {
@@ -215,8 +244,8 @@ public class PrintNode
                         Codegen.progOut += indent + "store i32 0, i32* %v" + idx + "\n";
                         break;
                     case "String" :
-                        Codegen.progOut += indent + "%str" + idx + " = load i8*, i8** %v" + idx + "\n";
-                        Codegen.progOut += indent + "call i8* @strcpy(i8* %str" + idx + ", i8* getelementptr inbounds ([1 x i8], [1 x i8]* @nullStr, i32 0, i32 0))\n";
+                        Codegen.progOut += indent + "%str" + idx + " = getelementptr inbounds ([1 x i8], [1 x i8]* @nullStr, i32 0, i32 0)\n";
+                        Codegen.progOut += indent + "store i8* %str" + idx + ", i8** %v" + idx + "\n";
                         break;
                     default :
                         Codegen.progOut += indent + "%set" + idx + " = getelementptr %struct." + atTyp + ", %struct." + atTyp + "* %v" + idx + ", i32 0, i32 0\n";
@@ -224,13 +253,14 @@ public class PrintNode
                 }
             }
 
-            Codegen.progOut += indent + "ret void\n}\n";
+            Codegen.progOut += indent + "ret void\n}\n\n";
         }
     }
 
+    //Class Visitor
 	public void Visit(AST.class_ cl)
     {
-
+        //Iterate over Class Methods
 		for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
         {
             if(entry.getKey().equals("type_name"))
@@ -246,39 +276,49 @@ public class PrintNode
         }
     }
 
+    //Method Visitor
     public void Visit(AST.method md)
     {
-        Integer idx = 1;
-
+        //Insert Class Attibutes into Scope Table
         ScopeTable<String> varNames = new ScopeTable<String>();
-		for(AST.formal fl: md.formals)
-        {
-            String varId = "%a"+Integer.toString(idx++);
-            varNames.insert(fl.name,varId);
-            Codegen.progOut += clNames.get(fl.typeid)+" "+varId+", ";
-        }
-        if(!md.formals.isEmpty())
-            Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-2);
+        Integer idx = 1;
+		for(AST.attr at: classAttrs.get(className))
+            varNames.insert(at.name,Integer.toString(idx++));
 
+        if(!className.equals("Main") || !md.name.equals("main"))
+        {
+            idx = 2;
+            Codegen.progOut += "%struct." + className + "* %a1, ";
+            varNames.insert("self","%a1");
+            for(AST.formal fl: md.formals)
+            {
+                String varId = "%a"+Integer.toString(idx++);
+                varNames.insert(fl.name,varId);
+                Codegen.progOut += clNames.get(fl.typeid)+" "+varId+", ";
+            }
+            Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-2);
+        }
         Codegen.progOut += ") {\nentry:\n";
 
         varCnt = 0;
         labCnt = 0;
         if(md.name.equals("main"))
         {
-            varCnt++;
-            Codegen.progOut += indent + "%v1 = alloca %struct.Main\n";
-            Codegen.progOut += indent + "call void @init_Main(%struct.Main* %v1)\n";
+            Codegen.progOut += indent + "%a1 = alloca %struct.Main\n";
+            varNames.insert("self","%a1");
+            Codegen.progOut += indent + "call void @init_Main(%struct.Main* %a1)\n";
         }
 
         Visit(md.body,varNames);
 
         Codegen.progOut += indent + "ret " + clNames.get(md.typeid) + " " + md.body.type + "\n";
-        Codegen.progOut += "}\n";
+        Codegen.progOut += "}\n\n";
     }
 
+    //Expression Visitor
     public void Visit(AST.expression expr, ScopeTable<String> varNames)
     {
+        //Bool
         if(expr instanceof AST.bool_const)
         {
             AST.bool_const b = (AST.bool_const)expr;
@@ -287,27 +327,81 @@ public class PrintNode
                 value = 1;
             b.type = Integer.toString(value);
         }
-        if(expr instanceof AST.int_const)
+
+        //Int
+        else if(expr instanceof AST.int_const)
         {
             AST.int_const ic = (AST.int_const)expr;
             ic.type = Integer.toString(ic.value);
         }
 
+        //String
+        else if(expr instanceof AST.string_const)
+        {
+            AST.string_const str = (AST.string_const)expr;
+
+            String escStr = "";
+            //Escape Characters in 'str'
+            for(char c : str.value.toCharArray())
+            {
+                switch(c)
+                {
+                    case '\\' :
+                        escStr += "\\5C";
+                        break;
+                    case '\"' :
+                        escStr += "\\22";
+                        break;
+                    case '\n' :
+                        escStr += "\\0A";
+                        break;
+                    case '\t' :
+                        escStr += "\\09";
+                        break;
+                    case '\b' :
+                        escStr += "\\08";
+                        break;
+                    case '\f' :
+                        escStr += "\\0C";
+                        break;
+                    default :
+                        escStr += c;
+                }
+            }
+
+            String arStr = "[" + str.value.length() + " x i8]";
+            globOut += "@g" + ++globCnt + " = private unnamed_addr constant " + arStr + " c\"" + escStr + "\"\n"; 
+            Codegen.progOut += indent + "%v" + ++varCnt + " = getelementptr inbounds " + arStr + ", " + arStr + "* @g" + globCnt + ", i32 0, i32 0\n";
+            str.type = "%v" + varCnt;
+        }
+
+        //Object
         else if(expr instanceof AST.object)
         {
             AST.object obj = (AST.object)expr;
             obj.type = varNames.lookUpGlobal(obj.name);
         }
 
+        //Assign
         else if(expr instanceof AST.assign)
         {
             AST.assign asgn = (AST.assign)expr;
             Visit(asgn.e1,varNames);
             String vname = varNames.lookUpGlobal(asgn.name);
 
-            Codegen.progOut += indent + "store " + clNames.get(asgn.type) + " " + asgn.e1.type + ", " + clNames.get(asgn.type) + "* " + vname + "\n";
+            //If Assignment expression is a Class Attribute
+            if(isFstDgt(vname) == true)
+            {
+                String clTyp = "%struct." + className;
+                varCnt++;
+                Codegen.progOut += indent + "%v" + varCnt + " = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 " + vname + "\n";
+                Codegen.progOut += indent + "store " + clNames.get(asgn.type) + " " + asgn.e1.type + ", " + clNames.get(asgn.type) + "* %v" + varCnt + "\n";
+            }
+            else
+                Codegen.progOut += indent + "store " + clNames.get(asgn.type) + " " + asgn.e1.type + ", " + clNames.get(asgn.type) + "* " + vname + "\n";
         }
 
+        //New
         else if(expr instanceof AST.new_)
         {
             AST.new_ nw = (AST.new_)expr;
@@ -352,6 +446,8 @@ public class PrintNode
 
 
         }
+
+        //Add
         else if(expr instanceof AST.plus)
         {
             AST.plus pl = (AST.plus)expr;
@@ -371,6 +467,7 @@ public class PrintNode
             pl.type = vname;
         }
 
+        //Subtract
         else if(expr instanceof AST.sub)
         {
             AST.sub s = (AST.sub)expr;
@@ -388,6 +485,8 @@ public class PrintNode
             Codegen.progOut += indent + s.type + " = sub " +  clNames.get(expr.type);
             Codegen.progOut += " " + s.e1.type + ", " + s.e2.type + "\n";
         }
+
+        //Multiply
         else if(expr instanceof AST.mul)
         {
             AST.mul m = (AST.mul)expr;
@@ -406,13 +505,14 @@ public class PrintNode
             Codegen.progOut += " " + m.e1.type + ", " + m.e2.type + "\n";
         }
 
+        //Divide
         else if(expr instanceof AST.divide)
         {
             AST.divide div = (AST.divide)expr;
             Visit(div.e1,varNames);
             Visit(div.e2,varNames);
             
-            // Handling division by zero
+            //handling division by zero
             String vname = "%v" + Integer.toString(varCnt);
             varCnt++;
             labCnt++;
@@ -438,6 +538,7 @@ public class PrintNode
             Codegen.progOut += " " + div.e1.type + ", " + div.e2.type + "\n";
         }
 
+        //Block
         else if(expr instanceof AST.block)
         {
             AST.block bk = (AST.block)expr;
@@ -450,6 +551,7 @@ public class PrintNode
             bk.type = bk.l1.get(idx).type;
         }
 
+        //Less Than
         else if(expr instanceof AST.lt)
         {
             AST.lt l = (AST.lt)expr;
@@ -472,6 +574,7 @@ public class PrintNode
             }
         }
 
+        //Less Than or Equal To
         else if(expr instanceof AST.leq)
         {
             AST.leq l = (AST.leq)expr;
@@ -493,6 +596,7 @@ public class PrintNode
             }
         }
 
+        //Equal To
         else if(expr instanceof AST.eq)
         {
             AST.eq l = (AST.eq)expr;
@@ -514,20 +618,21 @@ public class PrintNode
             }
         }
 
+        //If Else
         else if(expr instanceof AST.cond)
         {
             AST.cond cd = (AST.cond)expr;
             Visit(cd.predicate, varNames);
 
+            //if predicate is always false, execute else body
             if(isBool(cd.predicate.type) == 0)
             {
-                // execute else body
                 Visit(cd.elsebody, varNames);
                 cd.type = cd.elsebody.type;
             }
+            //if predicate is always ture, execute if body
             else if(isBool(cd.predicate.type) == 1)
             {
-                // execute if body
                 Visit(cd.ifbody, varNames);
                 cd.type = cd.ifbody.type;
             }
@@ -556,15 +661,19 @@ public class PrintNode
                 cd.type = vname;
             }
         }
+
+        //While Loop
         else if(expr instanceof AST.loop)
         {
             AST.loop lp = (AST.loop)expr;
             Visit(lp.predicate, varNames);
 
+            //if predicate is always false
             if(isBool(lp.predicate.type) == 0)
             {
-                //Do nothing
+                //do nothing
             }
+            //if predicate is always true
             else if(isBool(lp.predicate.type) == 1)
             {
                 //infinite loop
