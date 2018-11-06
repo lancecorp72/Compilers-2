@@ -137,6 +137,24 @@ public class PrintNode
         Codegen.progOut = globOut + "\n" + Codegen.progOut;
     }
 
+    //Substring Function
+    private void emitSubstr()
+    {
+        Codegen.progOut += "define i8* @substr(i8* %s, i32 %i, i32 %l) #0 {\nentry:\n  %s.addr = alloca i8*, align 8\n  %i.addr = alloca i32, align 4\n"+ 
+        " %l.addr = alloca i32, align 4\n  %k = alloca i32, align 4\n  %res = alloca i8*, align 8\n  %j = alloca i32, align 4\n  store i8* %s, i8** %s.addr, align 8\n"+
+        "  store i32 %i, i32* %i.addr, align 4\n  store i32 %l, i32* %l.addr, align 4\n  %0 = load i8*, i8** %s.addr, align 8\n  %call = call i32 @strlen(i8* %0) #5\n "+
+        " store i32 %call, i32* %k, align 4\n  %1 = load i32, i32* %k, align 4\n  %2 = load i32, i32* %l.addr, align 4\n  %sub = sub nsw i32 %1, %2\n  %3 = load i32, i32* %i.addr, align 4\n"+
+        "  %sub1 = sub nsw i32 %sub, %3\n  %cmp = icmp slt i32 %sub1, 0\n  br i1 %cmp, label %if.then, label %if.end\n\nif.then:\n"+
+        "  %call3 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([37 x i8], [37 x i8]* @.str, i32 0, i32 0))\n  call void @exit(i32 0) #6\n  unreachable\n\nif.end:\n"+
+        "  %4 = load i32, i32* %l.addr, align 4\n  %conv4 = sext i32 %4 to i64\n  %mul = mul i64 %conv4, 1\n  %call5 = call noalias i8* @malloc(i64 %mul) #7\n"+
+        "  store i8* %call5, i8** %res, align 8\n  store i32 0, i32* %j, align 4\n  br label %while.cond\n\nwhile.cond:\n  %5 = load i32, i32* %j, align 4\n"+
+        "  %6 = load i32, i32* %l.addr, align 4\n  %cmp6 = icmp slt i32 %5, %6\n  br i1 %cmp6, label %while.body, label %while.end\n\nwhile.body:\n"+
+        "  %7 = load i8*, i8** %s.addr, align 8\n  %8 = load i32, i32* %j, align 4\n  %9 = load i32, i32* %i.addr, align 4\n  %add = add nsw i32 %8, %9\n  %idxprom = sext i32 %add to i64\n"+
+        "  %arrayidx = getelementptr inbounds i8, i8* %7, i64 %idxprom\n  %10 = load i8, i8* %arrayidx, align 1\n  %11 = load i8*, i8** %res, align 8\n  %12 = load i32, i32* %j, align 4\n"+
+        "  %idxprom8 = sext i32 %12 to i64\n  %arrayidx9 = getelementptr inbounds i8, i8* %11, i64 %idxprom8\n  store i8 %10, i8* %arrayidx9, align 1\n  %13 = load i32, i32* %j, align 4\n"+
+        "  %inc = add nsw i32 %13, 1\n  store i32 %inc, i32* %j, align 4\n  br label %while.cond\n\nwhile.end:\n  %14 = load i8*, i8** %res, align 8\n  ret i8* %14\n}\n\n";
+    }
+
     //Add Base Functions
     private void DecBaseFns()
     {
@@ -190,6 +208,11 @@ public class PrintNode
         Codegen.progOut += "define i8* @concat(i8* %a1, i8* %a2){\n";
         Codegen.progOut += indent + "call i8* @strcat(i8* %a1, i8* %a2)\n";
         Codegen.progOut += indent + "ret i8* %a1\n}\n\n";
+
+        baseFns.add("substr");
+        emitSubstr();
+      
+        Codegen.progOut += "\n";
     }
 
     //Class Initializers
@@ -382,6 +405,46 @@ public class PrintNode
         else if(expr instanceof AST.new_)
         {
             AST.new_ nw = (AST.new_)expr;
+            varCnt++;
+            String vname1 = "%v" + Integer.toString(varCnt);
+            varCnt++;
+            String vname2 = "%v" + Integer.toString(varCnt);
+            
+            Codegen.progOut += indent + vname1 + " = alloca %struct." + nw.typeid + "\n";
+            Codegen.progOut += indent + "call void @init_" + nw.typeid + "(%struct." + nw.typeid + "* " + vname1 + ")\n";
+            
+            Codegen.progOut += indent + vname2 + " = load %struct." + nw.typeid + ", %struct." + nw.typeid + "* " + vname1 + "\n";
+            nw.type = vname2; 
+
+        }
+
+        else if(expr instanceof AST.isvoid)
+        {
+            AST.isvoid iv = (AST.isvoid)expr;
+            Visit(iv.e1, varNames);
+            String type = iv.e1.type;
+            
+            System.out.println(type);
+            /*
+            if(iv.e1.type.equals("Int") || iv.e1.type.equals("Bool") || iv.e1.type.equals("String"))
+            {
+                iv.type = "0";
+            }
+            else
+            {
+                Visit(iv.e1, varNames);
+                varCnt++;
+                String vname = "%v" + Integer.toString(varCnt);    
+                Codegen.progOut += indent + vname + " = getelementptr %struct." + type + ", %struct." + type + "* " + iv.e1.type + ", i32 0 i32 0\n";
+
+                varCnt++;
+                String vname2 = "%v" + Integer.toString(varCnt);
+                Codegen.progOut += indent + vname2 + " = load i8, i8* " + vname + "\n";
+
+                iv.type = vname2;
+            }*/
+
+
         }
 
         //Add
