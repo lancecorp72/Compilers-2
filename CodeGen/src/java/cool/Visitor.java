@@ -340,7 +340,7 @@ public class Visitor
 			{
 				String type = scopeTable.lookUpGlobal(expr.name);
 				if(type == null)
-					Semantic.reportError(filename,expr.lineNo,expr.name+"undefined");
+					Semantic.reportError(filename,expr.lineNo,expr.name+" undefined");
 				else if(!Semantic.inheritance.isConforming(type,expr.e1.type))
 				{
 					Semantic.reportError(filename,expr.lineNo,"Type '"+expr.e1.type+"' cannot conform to Type '"+type+"' for Assign operation");

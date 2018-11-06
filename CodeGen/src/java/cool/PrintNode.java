@@ -291,8 +291,47 @@ public class PrintNode
         else if(expr instanceof AST.new_)
         {
             AST.new_ nw = (AST.new_)expr;
+            varCnt++;
+            String vname1 = "%v" + Integer.toString(varCnt);
+            varCnt++;
+            String vname2 = "%v" + Integer.toString(varCnt);
+            
+            Codegen.progOut += indent + vname1 + " = alloca %struct." + nw.typeid + "\n";
+            Codegen.progOut += indent + "call void @init_" + nw.typeid + "(%struct." + nw.typeid + "* " + vname1 + ")\n";
+            
+            Codegen.progOut += indent + vname2 + " = load %struct." + nw.typeid + ", %struct." + nw.typeid + "* " + vname1 + "\n";
+            nw.type = vname2; 
+
         }
 
+        else if(expr instanceof AST.isvoid)
+        {
+            AST.isvoid iv = (AST.isvoid)expr;
+            Visit(iv.e1, varNames);
+            String type = iv.e1.type;
+            
+            System.out.println(type);
+            /*
+            if(iv.e1.type.equals("Int") || iv.e1.type.equals("Bool") || iv.e1.type.equals("String"))
+            {
+                iv.type = "0";
+            }
+            else
+            {
+                Visit(iv.e1, varNames);
+                varCnt++;
+                String vname = "%v" + Integer.toString(varCnt);    
+                Codegen.progOut += indent + vname + " = getelementptr %struct." + type + ", %struct." + type + "* " + iv.e1.type + ", i32 0 i32 0\n";
+
+                varCnt++;
+                String vname2 = "%v" + Integer.toString(varCnt);
+                Codegen.progOut += indent + vname2 + " = load i8, i8* " + vname + "\n";
+
+                iv.type = vname2;
+            }*/
+
+
+        }
         else if(expr instanceof AST.plus)
         {
             AST.plus pl = (AST.plus)expr;
