@@ -140,6 +140,12 @@ public class Inheritance
     	return temp;
 	}
 
+	public String GetReturnType(String s)
+	{
+		if(CheckMangledName(s))
+			return mangledNames.get(s);
+		return null;
+	}
 	//Checks if a match exists for given Function signature
 	public boolean CheckMangledName(String s)
 	{

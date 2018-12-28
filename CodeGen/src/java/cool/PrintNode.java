@@ -438,7 +438,6 @@ public class PrintNode
                 iv.type = "0";
             else
             {
-                Visit(iv.e1, varNames);
                 varCnt++;
                 String vname = "%v" + Integer.toString(varCnt); 
                 Codegen.progOut += indent + vname + " = getelementptr %struct." + className + ", %struct." + className + "* %a1, i32 0, i32 " + iv.e1.type + "\n";
@@ -724,20 +723,22 @@ public class PrintNode
             AST.static_dispatch sd = (AST.static_dispatch)expr;
             Visit(sd.caller, varNames);
 
-            System.out.println(sd.caller.type+sd.typeid+sd.name);
-            vname = "%v" + ++varCnt;
-            clTyp = clName(sd.typeid);
-            Codegen.progOut += indent + vname + " = alloca " + clTyp + "\n";
-            AST.method md = Semantic.inheritance.GetClassMethods(sd.type).get(sd.name);
-            vname1 = "%v" + ++varCnt;
-            Codegen.progOut += "%v" + vname1 + " = call " + clNames(md.typeid) + "@" + GetMangledName(sd.type,md) + "(";
+            //System.out.println(sd.caller.type+sd.typeid+sd.name);
+            //String vname = "%v" + ++varCnt;
+            //String clTyp = clNames.get(sd.typeid);
+            //Codegen.progOut += indent + vname + " = alloca " + clTyp + "\n";
+            //AST.method md = Semantic.inheritance.GetClassMethods(sd.type).get(sd.name);
+            //String vname1 = "%v" + ++varCnt;
+            //Codegen.progOut += "%v" + vname1 + " = call " + clNames.get(md.typeid) + "@" + Semantic.inheritance.GetMangledName(sd.type,md) + "(";
 
-            for(AST.expression exp : sd.actuals)
-            {
-                Codegen.progOut += clNames(exp.type);
-                Visit(exp, varNames);
-                Codegen.progOut += exp.type;
-            }
+            //Codegen.progOut += clTyp + "* " + vname + ", ";
+            //for(AST.expression exp : sd.actuals)
+            //{
+            //    Codegen.progOut += clNames.get(exp.type);
+            //    Visit(exp, varNames);
+            //    Codegen.progOut += exp.type;
+            //}
+            //Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-2) + ")";
         }
     } 
 }
